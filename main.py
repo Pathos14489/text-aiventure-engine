@@ -3,19 +3,18 @@ from openai import OpenAI
 import json
 from pydantic import BaseModel,Field
 from typing import Union,Annotated
-import gradio as gr
-import threading
+# import gradio as gr
+# import threading
 from message_formatter import MessageFormatter, PromptStyle
 from get_schema_description import get_schema_description
-import time
-from duckduckgo_search import DDGS
-import random
-import chromadb
-from chromadb.config import Settings
-import requests
-import bs4
-from bs4 import BeautifulSoup
-import uuid
+# import time
+# import random
+# import chromadb
+# from chromadb.config import Settings
+# import requests
+# import bs4
+# from bs4 import BeautifulSoup
+# import uuid
 import os
 
 def clear_console():
