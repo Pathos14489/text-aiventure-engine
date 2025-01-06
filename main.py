@@ -533,7 +533,11 @@ class TextAIventureEngine():
                     temperature=self.temp,
                     top_p=self.top_p,
                     extra_body={
-                        "grammar": schema,
+                        # "grammar": schema,
+                        "response_format":{
+                            "type": "json_schema",
+                            "json_schema": schema
+                        },
                         "min_p": self.min_p,
                     },
                     max_tokens=self.max_tokens
@@ -621,7 +625,11 @@ class TextAIventureEngine():
                     temperature=self.temp,
                     top_p=self.top_p,
                     extra_body={
-                        "grammar": schema,
+                        # "grammar": schema,
+                        "response_format":{
+                            "type": "json_schema",
+                            "json_schema": schema
+                        },
                         "min_p": self.min_p,
                     },
                     max_tokens=self.max_tokens
@@ -666,7 +674,11 @@ class TextAIventureEngine():
                     temperature=self.temp,
                     top_p=self.top_p,
                     extra_body={
-                        "grammar": schema,
+                        # "grammar": schema,
+                        "response_format":{
+                            "type": "json_schema",
+                            "json_schema": schema
+                        },
                         "min_p": self.min_p,
                     },
                     max_tokens=self.max_tokens
@@ -715,7 +727,11 @@ class TextAIventureEngine():
                     temperature=self.temp,
                     top_p=self.top_p,
                     extra_body={
-                        "grammar": schema,
+                        # "grammar": schema,
+                        "response_format":{
+                            "type": "json_schema",
+                            "json_schema": schema
+                        },
                         "min_p": self.min_p,
                     },
                     max_tokens=self.max_tokens
@@ -769,7 +785,11 @@ class TextAIventureEngine():
                     temperature=self.temp,
                     top_p=self.top_p,
                     extra_body={
-                        "grammar": schema,
+                        # "grammar": schema,
+                        "response_format":{
+                            "type": "json_schema",
+                            "json_schema": schema
+                        },
                         "min_p": self.min_p,
                     },
                     max_tokens=self.max_tokens
@@ -872,7 +892,11 @@ class TextAIventureEngine():
                     temperature=self.temp,
                     top_p=self.top_p,
                     extra_body={
-                        "grammar": schema,
+                        # "grammar": schema,
+                        "response_format":{
+                            "type": "json_schema",
+                            "json_schema": schema
+                        },
                         "min_p": self.min_p,
                     },
                     max_tokens=self.max_tokens
@@ -913,7 +937,11 @@ class TextAIventureEngine():
                     temperature=self.temp,
                     top_p=self.top_p,
                     extra_body={
-                        "grammar": schema,
+                        # "grammar": schema,
+                        "response_format":{
+                            "type": "json_schema",
+                            "json_schema": schema
+                        },
                         "min_p": self.min_p,
                     },
                     max_tokens=self.max_tokens
