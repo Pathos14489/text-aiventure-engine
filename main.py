@@ -1314,7 +1314,7 @@ while True: # Main game loop
                         if character.stats.hp <= 0:
                             item_found = True
                             player["inventory"].append(character.equipment.headwear)
-                            item_name = character.equipment.lowerbodywear.name
+                            item_name = character.equipment.headwear.name
                             character.equipment.headwear = None
                             print(f"You took the {item_name} from {character.full_name}.")
                         else:
@@ -1326,7 +1326,7 @@ while True: # Main game loop
                         if character.stats.hp <= 0:
                             item_found = True
                             player["inventory"].append(character.equipment.upperbodywear)
-                            item_name = character.equipment.lowerbodywear.name
+                            item_name = character.equipment.upperbodywear.name
                             character.equipment.upperbodywear = None
                             print(f"You took the {item_name} from {character.full_name}.")
                         else:
@@ -1338,7 +1338,7 @@ while True: # Main game loop
                         if character.stats.hp <= 0:
                             item_found = True
                             player["inventory"].append(character.equipment.gloves)
-                            item_name = character.equipment.lowerbodywear.name
+                            item_name = character.equipment.gloves.name
                             character.equipment.gloves = None
                             print(f"You took the {item_name} from {character.full_name}.")
                         else:
