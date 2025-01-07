@@ -329,16 +329,18 @@ class Character(BaseModel):
     race: str
     species: str
     special_attributes: SPECIALAttributes
-    stats: Stats = None
+    stats: Stats = Field(None,description="The character's stats. This is used for things like how much damage the character can take before dying, etc.")
     equipment: Equipment
     hex_color: str = Field(...,description="The hex color code for the character's name. Should be a 6 character hex code, without the #.",pattern="^([0-9A-Fa-f]{6})$")
     personality_description: str
     body_part_desctiptions: BodyPartDescriptions
     backstory: str = Field(...,description="A description of the character's backstory. Should be at least a paragraph long.", min_length=1)
+    processing: bool = True
 
     def __init__(self, **data):
         super().__init__(**data)
         self.stats = Stats(hp=100,hunger=100,thirst=100)
+        self.processing = True
 
     def get_age(self):
         if self.age < 5:
@@ -520,16 +522,54 @@ class Story(BaseModel):
     aesthetic: str = Field(description="The aesthetic of the story. Can be a genre, a theme, a style, etc. The overall feel of the story and the writing of the items, characters, and locations.")
     starting_location: Location = Field(description="The starting location of the story.")
 
+class TravelDecision(BaseModel):
+    """Travel Decision Schema - A decision made by an NPC to travel to a new location in the text adventure game. All fields are required to have a value."""
+    type_string: str = Field(description="The type of decision.", pattern="^Travel$")
+    location: str = Field(description="The location that the NPC wants to travel to.", min_length=1)
+    
+class ChatDecision(BaseModel):
+    """Chat Decision Schema - A decision made by an NPC to say smoething in the text adventure game. All fields are required to have a value."""
+    type_string: str = Field(description="The type of decision.", pattern="^Chat$")
+    message: str = Field(description="The message that the NPC wants to say.", min_length=1)
+
+class PickupDecision(BaseModel):
+    """Pickup Decision Schema - A decision made by an NPC to pick up an item in the text adventure game. All fields are required to have a value."""
+    type_string: str = Field(description="The type of decision.", pattern="^Pickup$")
+    item: str = Field(description="The item that the NPC wants to pick up.", min_length=1)
+
+class DropDecision(BaseModel):
+    """Drop Decision Schema - A decision made by an NPC to drop an item in the text adventure game. All fields are required to have a value."""
+    type_string: str = Field(description="The type of decision.", pattern="^Drop$")
+    item: str = Field(description="The item that the NPC wants to drop.", min_length=1)
+
+class AttackDecision(BaseModel):
+    """Attack Decision Schema - A decision made by an NPC to attack another NPC in the text adventure game. All fields are required to have a value."""
+    type_string: str = Field(description="The type of decision.", pattern="^Attack$")
+    target: str = Field(description="The target that the NPC wants to attack.", min_length=1)
+
+class EquipDecision(BaseModel):
+    """Equip Decision Schema - A decision made by an NPC to equip an item in the text adventure game. All fields are required to have a value."""
+    type_string: str = Field(description="The type of decision.", pattern="^Equip$")
+    item: str = Field(description="The item that the NPC wants to equip.", min_length=1)
+
+class UnequipDecision(BaseModel):
+    """Unequip Decision Schema - A decision made by an NPC to unequip an item in the text adventure game. All fields are required to have a value."""
+    type_string: str = Field(description="The type of decision.", pattern="^Unequip$")
+    item: str = Field(description="The item that the NPC wants to unequip.", min_length=1)
+
+class Decisions(BaseModel):
+    """Decision Schema - A decision made by an NPC in the text adventure game. All fields are required to have a value."""
+    decisions: list[Union[TravelDecision,ChatDecision,PickupDecision,DropDecision,AttackDecision,EquipDecision,UnequipDecision]] = Field(description="A list of decisions made by the NPC. Each decision should have a type_string, and the appropriate fields for that type of decision. All decisions made by the NPC in the text adventure game.", min_length=1)
+
 class TextAIventureEngine():
     def __init__(self):
-        self.story_title = None
-        self.story_setting = None
-        self.story_vibe = None
-        self.story_aesthetic = None
-        self.starting_location = None
-        self.locations = []
-        self.characters = []
-        self.met = []
+        self.story_vibe:str = None
+        self.story_aesthetic:str = None
+        self.starting_location:Location = None
+        self.locations: list[Location] = []
+        self.characters: list[Character] = []
+        self.met: list[Character] = []
+        self.travel_order: list[Location] = [] # list of the last 5 locations visited
         self.client = OpenAI(api_key="abc123", base_url="http://localhost:8000/v1/")
         # self.chroma_path = f"./chromadb"
         # self.chroma_client = chromadb.PersistentClient(self.chroma_path,Settings(anonymized_telemetry=False))
@@ -537,9 +577,11 @@ class TextAIventureEngine():
         self.top_p = 0.95
         self.min_p = 0.075
         self.max_tokens = 3072
+        self.verbose = True
 
     def generate_story(self, prompt:str):
-        print("Generating Story for Prompt:",prompt)
+        if self.verbose:
+            print("Generating Story for Prompt:",prompt)
         messages = [
             {
                 "role": "system",
@@ -625,14 +667,16 @@ class TextAIventureEngine():
                             self.characters.append(character)
                             break
                 story_json = json.loads(story.model_dump_json())
-                print(json.dumps(story_json,indent=4))
+                if self.verbose:
+                    print(json.dumps(story_json,indent=4))
             except Exception as e:
                 print(e)
                 pass
         return story
     
     def generate_travelling_location(self, previous_location:Location, prompt:str):
-        print("Generating Location for Prompt:",prompt)
+        if self.verbose:
+            print("Generating Location for Prompt:",prompt)
         messages = [
             {
                 "role": "system",
@@ -678,14 +722,16 @@ class TextAIventureEngine():
                 location_json = completion.choices[0].message.content
                 location_json = json.loads(location_json)
                 location = Location(**location_json)
-                print(json.dumps(location_json,indent=4))
+                if self.verbose:
+                    print(json.dumps(location_json,indent=4))
             except Exception as e:
                 # print(e)
                 pass
         return location
     
     def generate_location(self, prompt:str):
-        print("Generating Location for Prompt:",prompt)
+        if self.verbose:
+            print("Generating Location for Prompt:",prompt)
         messages = [
             {
                 "role": "system",
@@ -727,14 +773,16 @@ class TextAIventureEngine():
                 location_json = completion.choices[0].message.content
                 location_json = json.loads(location_json)
                 location = Location(**location_json)
-                print(json.dumps(location_json,indent=4))
+                if self.verbose:
+                    print(json.dumps(location_json,indent=4))
             except Exception as e:
                 # print(e)
                 pass
         return location
 
     def generate_travelable_location(self, location:Location, prompt:str):
-        print("Generating Travelable Location for Prompt:",prompt)
+        if self.verbose:
+            print("Generating Travelable Location for Prompt:",prompt)
         messages = [
             {
                 "role": "system",
@@ -780,14 +828,16 @@ class TextAIventureEngine():
                 travelable_location_json = completion.choices[0].message.content
                 travelable_location_json = json.loads(travelable_location_json)
                 travelable_location = TravelableLocation(**travelable_location_json)
-                print(json.dumps(travelable_location_json,indent=4))
+                if self.verbose:
+                    print(json.dumps(travelable_location_json,indent=4))
             except Exception as e:
                 # print(e)
                 pass
         return travelable_location
 
     def generate_travelable_location_between(self, prev_location:Location, next_location2:Location, previous_method_of_travel:str = None):
-        print("Generating Travelable Location between:",prev_location.name,"and",next_location2.name)
+        if self.verbose:
+            print("Generating Travelable Location between:",prev_location.name,"and",next_location2.name)
         messages = [
             {
                 "role": "system",
@@ -838,52 +888,51 @@ class TextAIventureEngine():
                 travelable_location_json = completion.choices[0].message.content
                 travelable_location_json = json.loads(travelable_location_json)
                 travelable_location = TravelableLocation(**travelable_location_json)
-                print(json.dumps(travelable_location_json,indent=4))
+                if self.verbose:
+                    print(json.dumps(travelable_location_json,indent=4))
             except Exception as e:
                 # print(e)
                 pass
         return travelable_location
 
     def set_story(self, story:Story):
-        # self.story_title = story.title
-        # self.story_setting = story.setting
         self.story_vibe = story.vibe
         self.story_aesthetic = story.aesthetic
         self.starting_location = story.starting_location
         self.locations.append(story.starting_location)
     
-    def travel_to_location_from(self, previous_location:Location, travelable_location:TravelableLocation):
+    def travel_to_location_from(self, from_location:Location, travelable_location:TravelableLocation):
         next_location = None
         for loc in self.locations:
             if loc.name == travelable_location.location_name:
                 next_location = loc
                 break
         if next_location == None: # location doesn't exist yet
-            next_location = self.generate_location_from_travelable_location(previous_location, travelable_location) # generate the location
+            next_location = self.generate_location_from_travelable_location(from_location, travelable_location) # generate the location
             next_location.name = travelable_location.location_name
             self.locations.append(next_location)
         can_travel = False
-        for t_location in previous_location.travel_destinations:
+        for t_location in from_location.travel_destinations:
             if t_location.portal == travelable_location.portal:
                 can_travel = True
                 break
         if can_travel:
             already_has_between_location = False
             for travelable_l in next_location.travel_destinations:
-                if travelable_l.location_name == previous_location.name:
+                if travelable_l.location_name == from_location.name:
                     # print("Already has a travelable location between",previous_location.name,"and",location.name)
                     already_has_between_location = True
                     break
             if not already_has_between_location: 
                 portal_already_exists = False
                 while not portal_already_exists:
-                    between_location = self.generate_travelable_location_between(next_location, previous_location, travelable_location.movement_description)
-                    for t_location in previous_location.travel_destinations:
+                    between_location = self.generate_travelable_location_between(next_location, from_location, travelable_location.movement_description) # generate the travelable location for coming back
+                    for t_location in from_location.travel_destinations:
                         if t_location.portal == between_location.portal:
                             portal_already_exists = True
                             break
                     if not portal_already_exists:
-                        between_location.location_name = previous_location.name
+                        between_location.location_name = from_location.name
                         next_location.travel_destinations.append(between_location)
                         portal_already_exists = True
             # print(f"Travelling to {next_location.name}...")
@@ -893,13 +942,17 @@ class TextAIventureEngine():
                 if t_location.location_name == next_location.name:
                     next_location.travel_destinations.remove(t_location)
                     break
+            self.travel_order.append(from_location) # add the previous location to the travel order
+            if len(self.travel_order) > 5: # remove the oldest location from the travel order if it's longer than 5
+                self.travel_order.pop(0)
             return next_location
         else:
             print("You can't travel to that location from here!")
-            return previous_location
+            return from_location
         
-    def generate_location_from_travelable_location(self, current_location:Location, travelable_location:TravelableLocation):
-        print("Generating Location from Travelable Location:",travelable_location.location_name)
+    def generate_location_from_travelable_location(self, from_location:Location, travelable_location:TravelableLocation):
+        if self.verbose:
+            print("Generating Location from Travelable Location:",travelable_location.location_name)
         messages = [
             {
                 "role": "system",
@@ -907,7 +960,7 @@ class TextAIventureEngine():
             },
             {
                 "role": "system",
-                "content": f"The previous location was {current_location.name}.\n{current_location.location_physical_description}"
+                "content": f"The previous location was {from_location.name}.\n{from_location.location_physical_description}"
             },
             {
                 "role": "system",
@@ -945,14 +998,16 @@ class TextAIventureEngine():
                 location_json = completion.choices[0].message.content
                 location_json = json.loads(location_json)
                 location = Location(**location_json)
-                print(json.dumps(location_json,indent=4))
+                if self.verbose:
+                    print(json.dumps(location_json,indent=4))
             except Exception as e:
                 # print(e)
                 pass
         return location
 
     def generate_character_from_prompt(self, prompt:str):
-        print("Generating Character for Prompt:",prompt)
+        if self.verbose:
+            print("Generating Character for Prompt:",prompt)
         messages = [
             {
                 "role": "system",
@@ -997,7 +1052,8 @@ class TextAIventureEngine():
         return character
     
     def generate_item_from_prompt(self, prompt:str):
-        print("Generating Item for Prompt:",prompt)
+        if self.verbose:
+            print("Generating Item for Prompt:",prompt)
         messages = [
             {
                 "role": "system",
@@ -1037,7 +1093,8 @@ class TextAIventureEngine():
                 item = SomeItem(**item_json)
                 item = item.item
                 item.position_in_location = "on the ground"
-                print(json.dumps(json.loads(item.model_dump_json()),indent=4))
+                if self.verbose:
+                    print(json.dumps(json.loads(item.model_dump_json()),indent=4))
             except Exception as e:
                 # print(e)
                 pass
@@ -1054,59 +1111,55 @@ while not ready:
         ready = True
     
 current_location = text_adventure.starting_location
-player = {
-    "name": "Player",
-    "description": "The player character.",
-    "stats": {
-        "hp": 100,
-        "stamina": 100,
-        "mana": 100,
-        "hunger": 0,
-        "thirst": 0,
-        "energy": 100
-    },
-    "special_attributes": {
-        "strength": 5,
-        "perception": 5,
-        "endurance": 5,
-        "charisma": 5,
-        "intelligence": 5,
-        "agility": 5,
-        "luck": 5
-    },
-    "equipment": {
-        "headwear": None,
-        "upperbodywear": None,
-        "gloves": None,
-        "lowerbodywear": None,
-        "footwear": None,
-        "equiped_weapon": None,
-        "accessories": [],
-    },
-    "inventory": []
-}
+player_prompt = input("Enter a prompt for your character: ")
 
-player_name = input("Enter the name of your character: ")
-player["name"] = player_name
-player_description = input("Enter a description of your character: ")
-player["description"] = player_description
-for stat in player["special_attributes"]:
-    stat_name = stat.upper()[:3]
-    if stat_name == "LUC":
-        stat_name = "LUK"
-    stat_value = input(f"Enter the value for the {stat_name} stat (1-10) (default is 5): ")
-    if stat_value.strip() == "":
-        stat_value = 5
-    try:
-        stat_value = int(stat_value)
-    except:
-        stat_value = 5
-        continue
-    if stat_value < 1:
-        stat_value = 1
-    if stat_value > 10:
-        stat_value = 10
-    player["special_attributes"][stat] = stat_value
+happy_with_generated_character = False
+while not happy_with_generated_character:
+    print("Generating player character...")
+    player = text_adventure.generate_character_from_prompt(player_prompt)
+    player_response = input("Are you happy with this character? (y to confirm, or hit Enter to try again): ")
+    if player_response.lower() == "prompt" or player_response.lower() == "p" or player_response.lower() == "back" or player_response.lower() == "b":
+        player_prompt = input("Enter a new prompt for your character: ")
+    happy_with_generated_character = player_response.lower() == "y"
+
+print("SPECIAL Attributes:")
+print(f"Strength: {str(player.special_attributes.strength)}")
+print(f"Perception: {str(player.special_attributes.perception)}")
+print(f"Endurance: {str(player.special_attributes.endurance)}")
+print(f"Charisma: {str(player.special_attributes.charisma)}")
+print(f"Intelligence: {str(player.special_attributes.intelligence)}")
+print(f"Agility: {str(player.special_attributes.agility)}")
+print(f"Luck: {str(player.special_attributes.luck)}")
+
+change_special = input("Would you like to change your SPECIAL attributes? (y to change): ") == "y"
+
+if change_special:
+    special_order = ["STR","PER","END","CHA","INT","AGI","LCK"]
+    special_index = 0
+    for stat in player.special_attributes:
+        stat_name = special_order[special_index]
+        stat_value = input(f"Enter the value for the {stat_name} stat (1-10) (default is 5): ")
+        if stat_value.strip() == "":
+            stat_value = 5
+        try:
+            stat_value = int(stat_value)
+        except:
+            stat_value = 5
+            continue
+        if stat_value < 1:
+            stat_value = 1
+        if stat_value > 10:
+            stat_value = 10
+        stat = stat_value
+        special_index += 1
+    print("Updated SPECIAL Attributes:")
+    print(f"Strength: {str(player.special_attributes.strength)}")
+    print(f"Perception: {str(player.special_attributes.perception)}")
+    print(f"Endurance: {str(player.special_attributes.endurance)}")
+    print(f"Charisma: {str(player.special_attributes.charisma)}")
+    print(f"Intelligence: {str(player.special_attributes.intelligence)}")
+    print(f"Agility: {str(player.special_attributes.agility)}")
+    print(f"Luck: {str(player.special_attributes.luck)}")
     
 def print_current_screen():
     description = f"You're currently in {current_location.name}.\n\n{current_location.location_physical_description}\n\n"
@@ -1184,19 +1237,19 @@ while True: # Main game loop
         if at == "":
             print_current_screen()
         elif at == "me" or at == "myself":
-            print(f"{player['name']} - {player['description']}")
-            if player["equipment"]["headwear"]:
-                print(f"{player['name']} is wearing {player['equipment']['headwear'].physical_description} on their head.")
-            if player["equipment"]["upperbodywear"]:
-                print(f"{player['name']} is wearing {player['equipment']['upperbodywear'].physical_description} on their upper body.")
-            if player["equipment"]["gloves"]:
-                print(f"{player['name']} is wearing {player['equipment']['gloves'].physical_description} on their hands.")
-            if player["equipment"]["lowerbodywear"]:
-                print(f"{player['name']} is wearing {player['equipment']['lowerbodywear'].physical_description} on their lower body.")
-            if player["equipment"]["footwear"]:
-                print(f"{player['name']} is wearing {player['equipment']['footwear'].physical_description} on their feet.")
-            if player["equipment"]["equiped_weapon"]:
-                print(f"{player['name']} is holding {player['equipment']['equiped_weapon'].physical_description}.")
+            print(f"{player.full_name} - {player.get_physical_description()}")
+            if player.equipment.headwear:
+                print(f"{player.full_name} is wearing {player.equipment.headwear.physical_description} on their head.")
+            if player.equipment.upperbodywear:
+                print(f"{player.full_name} is wearing {player.equipment.upperbodywear.physical_description} on their upper body.")
+            if player.equipment.gloves:
+                print(f"{player.full_name} is wearing {player.equipment.gloves.physical_description} on their hands.")
+            if player.equipment.lowerbodywear:
+                print(f"{player.full_name} is wearing {player.equipment.lowerbodywear.physical_description} on their lower body.")
+            if player.equipment.footwear:
+                print(f"{player.full_name} is wearing {player.equipment.footwear.physical_description} on their feet.")
+            if player.equipment.equiped_weapon:
+                print(f"{player.full_name} is holding {player.equipment.equiped_weapon.physical_description}.")
         else:
             item_found = False
             for item in current_location.objects_in_location:
@@ -1221,7 +1274,7 @@ while True: # Main game loop
                         item_found = True
                         break
             if not item_found:
-                for item in player["inventory"]:
+                for item in player.equipment.inventory:
                     if at.lower() in item.name.lower():
                         print(f"{item.name} - {item.physical_description}")
                         item_found = True
@@ -1263,23 +1316,21 @@ while True: # Main game loop
         if last_location_name != current_location.name:
             print_current_screen()
     elif action.lower() == "inventory" or action.lower() == "i" or action.lower() == "inv":
-        print(f"You have {len(player['inventory'])} items in your inventory:")
-        for item in player["inventory"]:
+        print(f"You have {len(player.equipment.inventory)} items in your inventory:")
+        for item in player.equipment.inventory:
             print(f"{item.type_string} - {item.name} - {item.physical_description}")
     elif action.lower() == "stats":
         print("Your stats:")
-        print(f"HP: {player['stats']['hp']}")
-        print(f"Stamina: {player['stats']['stamina']}")
-        print(f"Mana: {player['stats']['mana']}")
-        print(f"Hunger: {player['stats']['hunger']}")
-        print(f"Thirst: {player['stats']['thirst']}")
-        print(f"Energy: {player['stats']['energy']}")
+        print(f"HP: {player.stats.hp}")
+        print(f"Hunger: {player.stats.hunger}")
+        print(f"Thirst: {player.stats.thirst}")
         print("Your SPECIAL stats:")
-        for stat in player["special_attributes"]:
-            stat_name = stat.upper()[:3]
-            if stat_name == "LUC":
-                stat_name = "LUK"
-            print(f"{stat_name}: {player['special_attributes'][stat]}")
+        special_order = ["STR","PER","END","CHA","INT","AGI","LCK"]
+        special_index = 0
+        for stat in player.special_attributes:
+            stat_name = special_order[special_index]
+            print(f"{stat_name}: {stat}")
+            special_index += 1
     elif action_args[0].lower() == "take" or action_args[0].lower() == "get" or action_args[0].lower() == "pickup":
         action_args = action.split(" ", 1)
         if len(action_args) < 2:
@@ -1289,7 +1340,7 @@ while True: # Main game loop
         item_found = False
         for item in current_location.objects_in_location:
             if item_to_take.lower() in item.name.lower():
-                player["inventory"].append(item)
+                player.equipment.inventory.append(item)
                 current_location.objects_in_location.remove(item)
                 item_found = True
                 print(f"You picked up the {item.name}.")
@@ -1298,7 +1349,7 @@ while True: # Main game loop
                 print(f"Searching {item.name} for {item_to_take}...")
                 for container_item in item.items:
                     if item_to_take.lower() in container_item.name.lower() or item_to_take.lower() in container_item.physical_description.lower():
-                        player["inventory"].append(container_item)
+                        player.equipment.inventory.append(container_item)
                         item.items.remove(container_item)
                         for location in text_adventure.locations:
                             if location.name == current_location.name:
@@ -1313,7 +1364,7 @@ while True: # Main game loop
                     if item_to_take.lower() in character.equipment.headwear.name.lower() or item_to_take.lower() in character.equipment.headwear.physical_description.lower():
                         if character.stats.hp <= 0:
                             item_found = True
-                            player["inventory"].append(character.equipment.headwear)
+                            player.equipment.inventory.append(character.equipment.headwear)
                             item_name = character.equipment.headwear.name
                             character.equipment.headwear = None
                             print(f"You took the {item_name} from {character.full_name}.")
@@ -1325,7 +1376,7 @@ while True: # Main game loop
                     if item_to_take.lower() in character.equipment.upperbodywear.name.lower() or item_to_take.lower() in character.equipment.upperbodywear.physical_description.lower():
                         if character.stats.hp <= 0:
                             item_found = True
-                            player["inventory"].append(character.equipment.upperbodywear)
+                            player.equipment.inventory.append(character.equipment.upperbodywear)
                             item_name = character.equipment.upperbodywear.name
                             character.equipment.upperbodywear = None
                             print(f"You took the {item_name} from {character.full_name}.")
@@ -1337,7 +1388,7 @@ while True: # Main game loop
                     if item_to_take.lower() in character.equipment.gloves.name.lower() or item_to_take.lower() in character.equipment.gloves.physical_description.lower():
                         if character.stats.hp <= 0:
                             item_found = True
-                            player["inventory"].append(character.equipment.gloves)
+                            player.equipment.inventory.append(character.equipment.gloves)
                             item_name = character.equipment.gloves.name
                             character.equipment.gloves = None
                             print(f"You took the {item_name} from {character.full_name}.")
@@ -1349,7 +1400,7 @@ while True: # Main game loop
                     if item_to_take.lower() in character.equipment.lowerbodywear.name.lower() or item_to_take.lower() in character.equipment.lowerbodywear.physical_description.lower():
                         if character.stats.hp <= 0:
                             item_found = True
-                            player["inventory"].append(character.equipment.lowerbodywear)
+                            player.equipment.inventory.append(character.equipment.lowerbodywear)
                             item_name = character.equipment.lowerbodywear.name
                             character.equipment.lowerbodywear = None
                             print(f"You took the {item_name} from {character.full_name}.")
@@ -1361,7 +1412,7 @@ while True: # Main game loop
                     if item_to_take.lower() in character.equipment.footwear.name.lower() or item_to_take.lower() in character.equipment.footwear.physical_description.lower():
                         if character.stats.hp <= 0:
                             item_found = True
-                            player["inventory"].append(character.equipment.footwear)
+                            player.equipment.inventory.append(character.equipment.footwear)
                             item_name = character.equipment.footwear.name
                             character.equipment.footwear = None
                             print(f"You took the {item_name} from {character.full_name}.")
@@ -1373,7 +1424,7 @@ while True: # Main game loop
                     if item_to_take.lower() in character.equipment.equiped_weapon.name.lower() or item_to_take.lower() in character.equipment.equiped_weapon.physical_description.lower():
                         if character.stats.hp <= 0:
                             item_found = True
-                            player["inventory"].append(character.equipment.equiped_weapon)
+                            player.equipment.inventory.append(character.equipment.equiped_weapon)
                             weapon_name = character.equipment.equiped_weapon
                             character.equipment.equiped_weapon = None
                             print(f"You took the {weapon_name} from {character.full_name}.")
@@ -1385,7 +1436,7 @@ while True: # Main game loop
                     if item_to_take.lower() in item.name.lower() or item_to_take.lower() in item.physical_description.lower():
                         if character.stats.hp <= 0:
                             # TODO: Ask the character if they want to give the item to the player
-                            player["inventory"].append(item)
+                            player.equipment.inventory.append(item)
                             character.equipment.inventory.remove(item)    
                             item_found = True
                             print(f"You took the {item.name} from {character.full_name}.")
@@ -1396,7 +1447,7 @@ while True: # Main game loop
                 for item in character.equipment.accessories:
                     if item_to_take.lower() in item.name.lower() or item_to_take.lower() in item.physical_description.lower():
                         if character.stats.hp <= 0:
-                            player["inventory"].append(item)
+                            player.equipment.inventory.append(item)
                             character.equipment.accessories.remove(item)
                             item_found = True
                             print(f"You took the {item.name} from {character.full_name}.")
@@ -1413,10 +1464,10 @@ while True: # Main game loop
             continue
         item_to_drop = action_args[1]
         item_found = False
-        for item in player["inventory"]:
+        for item in player.equipment.inventory:
             if item_to_drop.lower() in item.name.lower() or item_to_drop.lower() in item.physical_description.lower():
                 current_location.objects_in_location.append(item)
-                player["inventory"].remove(item)
+                player.equipment.inventory.remove(item)
                 for location in text_adventure.locations:
                     if location.name == current_location.name:
                         location.objects_in_location = current_location.objects_in_location
@@ -1433,7 +1484,7 @@ while True: # Main game loop
             continue
         item_to_put = action_args[1]
         item_found = None
-        for item in player["inventory"]:
+        for item in player.equipment.inventory:
             if item_to_put.lower() in item.name.lower():
                 inventory_found = item
                 break
@@ -1444,7 +1495,7 @@ while True: # Main game loop
         for item in current_location.objects_in_location:
             if where_to_put.lower() in item.name.lower():
                 item.items.append(inventory_found)
-                player["inventory"].remove(inventory_found)
+                player.equipment.inventory.remove(inventory_found)
                 for location in text_adventure.locations:
                     if location.name == current_location.name:
                         location.objects_in_location = current_location.objects_in_location
@@ -1459,11 +1510,11 @@ while True: # Main game loop
             continue
         item_to_equip = action_args[1]
         item_found = False
-        for item in player["inventory"]:
+        for item in player.equipment.inventory:
             if item_to_equip.lower() in item.name.lower() or item_to_equip.lower() in item.physical_description.lower():
                 if item.type_string.lower() == "weapon":
-                    player["equipment"]["equiped_weapon"] = item
-                    player["inventory"].remove(item)
+                    player.equipment.equiped_weapon = item
+                    player.equipment.inventory.remove(item)
                     for location in text_adventure.locations:
                         if location.name == current_location.name:
                             location.objects_in_location = current_location.objects_in_location
@@ -1472,8 +1523,8 @@ while True: # Main game loop
                     print(f"You equipped the {item.name}.")
                     break
                 elif item.type_string.lower() == "headwear":
-                    player["equipment"]["headwear"] = item
-                    player["inventory"].remove(item)
+                    player.equipment.headwear = item
+                    player.equipment.inventory.remove(item)
                     for location in text_adventure.locations:
                         if location.name == current_location.name:
                             location.objects_in_location = current_location.objects_in_location
@@ -1482,8 +1533,8 @@ while True: # Main game loop
                     print(f"You equipped the {item.name}.")
                     break
                 elif item.type_string.lower() == "upperbodywear":
-                    player["equipment"]["upperbodywear"] = item
-                    player["inventory"].remove(item)
+                    player.equipment.upperbodywear = item
+                    player.equipment.inventory.remove(item)
                     for location in text_adventure.locations:
                         if location.name == current_location.name:
                             location.objects_in_location = current_location.objects_in_location
@@ -1492,8 +1543,8 @@ while True: # Main game loop
                     print(f"You equipped the {item.name}.")
                     break
                 elif item.type_string.lower() == "lowerbodywear":
-                    player["equipment"]["lowerbodywear"] = item
-                    player["inventory"].remove(item)
+                    player.equipment.lowerbodywear = item
+                    player.equipment.inventory.remove(item)
                     for location in text_adventure.locations:
                         if location.name == current_location.name:
                             location.objects_in_location = current_location.objects_in_location
@@ -1502,8 +1553,8 @@ while True: # Main game loop
                     print(f"You equipped the {item.name}.")
                     break
                 elif item.type_string.lower() == "footwear":
-                    player["equipment"]["footwear"] = item
-                    player["inventory"].remove(item)
+                    player.equipment.footwear = item
+                    player.equipment.inventory.remove(item)
                     for location in text_adventure.locations:
                         if location.name == current_location.name:
                             location.objects_in_location = current_location.objects_in_location
@@ -1512,8 +1563,8 @@ while True: # Main game loop
                     print(f"You equipped the {item.name}.")
                     break
                 elif item.type_string.lower() == "gloves":
-                    player["equipment"]["gloves"] = item
-                    player["inventory"].remove(item)
+                    player.equipment.gloves = item
+                    player.equipment.inventory.remove(item)
                     for location in text_adventure.locations:
                         if location.name == current_location.name:
                             location.objects_in_location = current_location.objects_in_location
@@ -1522,8 +1573,8 @@ while True: # Main game loop
                     print(f"You equipped the {item.name}.")
                     break
                 elif item.type_string.lower() == "accessory":
-                    player["equipment"]["accessories"].append(item)
-                    player["inventory"].remove(item)
+                    player.equipment.accessories.append(item)
+                    player.equipment.inventory.remove(item)
                     for location in text_adventure.locations:
                         if location.name == current_location.name:
                             location.objects_in_location = current_location.objects_in_location
@@ -1540,10 +1591,10 @@ while True: # Main game loop
             continue
         item_to_unequip = action_args[1]
         item_found = False
-        for item in player["equipment"]:
+        for item in player.equipment:
             if item_to_unequip.lower() in item.name.lower() or item_to_unequip.lower() in item.physical_description.lower():
-                player["inventory"].append(item)
-                player["equipment"].remove(item)
+                player.equipment.inventory.append(item)
+                player.equipment.remove(item)
                 for location in text_adventure.locations:
                     if location.name == current_location.name:
                         location.objects_in_location = current_location.objects_in_location
@@ -1601,13 +1652,13 @@ while True: # Main game loop
             continue
         item_to_eat = action_args[1]
         item_found = False
-        for item in player["inventory"]:
+        for item in player.equipment.inventory:
             if item_to_eat.lower() in item.name.lower() or item_to_eat.lower() in item.physical_description.lower():
                 if item.type_string.lower() == "food":
-                    player["stats"]["hunger"] += item.hunger_restored
-                    player["stats"]["thirst"] += item.thirst_restored
-                    player["stats"]["hp"] += item.health_restored
-                    player["inventory"].remove(item)
+                    player.stats.hunger += item.hunger_restored
+                    player.stats.thirst += item.thirst_restored
+                    player.stats.hp += item.health_restored
+                    player.equipment.inventory.remove(item)
                     for location in text_adventure.locations:
                         if location.name == current_location.name:
                             location.objects_in_location = current_location.objects_in_location
@@ -1624,17 +1675,17 @@ while True: # Main game loop
             continue
         character_to_attack = action_args[1]
         character_found = False
-        if player["equipment"]["equiped_weapon"] == None:
+        if player.equipment.equiped_weapon == None:
             print("You need a weapon equipped to attack.")
             continue
         for character in current_location.characters_in_location:
             if character_to_attack.lower() in character.full_name.lower():
                 character_found = True
-                character.stats.hp -= player["equipment"]["equiped_weapon"].damage
+                character.stats.hp -= player.equipment.equiped_weapon.damage
                 if character.stats.hp <= 0:
-                    print(f"You attacked {character.full_name} with your {player['equipment']['equiped_weapon'].name} and killed them.")
+                    print(f"You attacked {character.full_name} with your {player.equipment['equiped_weapon'].name} and killed them.")
                 else:
-                    print(f"You attacked {character.full_name} with your {player['equipment']['equiped_weapon'].name}.")
+                    print(f"You attacked {character.full_name} with your {player.equipment['equiped_weapon'].name}.")
     elif action.lower() == "quit" or action.lower() == "exit" or action.lower() == "q":
         print("Quitting the game...")
         break
