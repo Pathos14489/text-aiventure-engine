@@ -258,7 +258,25 @@ class UpperBodywear(BaseItem):
     ])
     covers_breasts: bool = Field(description="Whether the upperbodywear covers the chest/breasts or not. Should be a boolean value. A skimpy bikini would cover the chest so long as nipples aren't visible. But it would not cover the belly.", examples=[True,False])
     covers_belly: bool = Field(description="Whether the upperbodywear covers the belly or not. Should be a boolean value. A crop top/bikini would cover the chest easily. But it would not cover the belly. A T-Shirt would cover both however.", examples=[True,False])
-    full_body_suit: bool = Field(description="Whether the upperbodywear covers the entire body or not. Should be a boolean value. A full body suit would cover the entire body, including the arms, legs, and head.", examples=[True,False])
+
+class FullBodywear(BaseItem):
+    """FullBodywear Schema - A fullbodywear item in a text adventure game. All fields are required to have a value. Only Clothing Items should have a warmth value. Fullbodywear can be a dress, a jumpsuit, a suit, etc."""
+    type_string: str = Field(description="The type of item.", pattern="^FullBodywear$")
+    name: str
+    physical_description: str = Field(description="A description of the fullbodywear. Should be at least a sentence long.", min_length=1)
+    position_in_location: str = Field(description="The position of the item in the location. Can be a room, a building, a city, a forest, etc. The position of the item in the location.", examples=[
+        "On the dress rack",
+        "On the table",
+        "In the chest",
+        "On the shelf",
+        "Beside the sandbags",
+        "On the ground"
+    ])
+    covers_breasts: bool = Field(description="Whether the fullbodywear covers the chest/breasts or not. Should be a boolean value. A skimpy bikini would cover the chest so long as nipples aren't visible. But it would not cover the belly.", examples=[True,False])
+    covers_belly: bool = Field(description="Whether the fullbodywear covers the belly or not. Should be a boolean value. A crop top/bikini would cover the chest easily. But it would not cover the belly. A T-Shirt would cover both however.", examples=[True,False])
+    covers_legs: bool = Field(description="Whether the fullbodywear covers the legs or not. Should be a boolean value.", examples=[True,False])
+    covers_genitals: bool = Field(description="Whether the fullbodywear covers the genitals or not. Should be a boolean value.", examples=[True,False])
+    covers_butt: bool = Field(description="Whether the fullbodywear covers the butt or not. Should be a boolean value.", examples=[True,False])
 
 class Accessory(BaseItem):
     """Accessory Schema - An accessory item in a text adventure game. All fields are required to have a value."""
@@ -277,6 +295,7 @@ class Accessory(BaseItem):
 class Equipment(BaseModel):
     """Equipment Schema - A set of equipment in a text adventure game. The equipment is a set of items that the player can wear, and should include a headwear, footwear, gloves, lowerbodywear, and upperbodywear item. Not all fields are required to have a value. If a character doesn't have a slot equiped, it should be None."""
     headwear: Union[Headwear,None] = Field(description="The headwear that the character has equiped. If the character has no headwear equiped, this whole object should be null.")
+    fullbodywear: Union[FullBodywear,None] = Field(description="The fullbodywear that the character has equiped. If the character has no fullbodywear equiped, this whole object should be null.")
     upperbodywear: Union[UpperBodywear,None] = Field(description="The upperbodywear that the character has equiped. If the character has no upperbodywear equiped, this whole object should be null.")
     # top_underwear: Union[TopUnderwear,None] = Field(description="The underwear that the character has equiped. If the character has no underwear equiped, this whole object should be null.")
     gloves: Union[Gloves,None] = Field(description="The gloves that the character has equiped. If the character has no gloves equiped, this whole object should be null.")
@@ -288,20 +307,20 @@ class Equipment(BaseModel):
     inventory: list[Union[Item,Food,Weapon,Headwear,Footwear,Gloves,LowerBodywear,UpperBodywear,Accessory]] = Field(description="A list of objects that the character has on them. Each item should have a name, description, value, weight. All items in the location. This can be furniture, or small objects that characters can interact with. If the item is food, it should have a hunger restored and thirst restored value. If the item is a weapon, it should have a damage value and required SPECIAL stats. If an item is a weapon, it MUST have a damage value and required SPECIAL stats. If an item is food, it MUST have a hunger restored and thirst restored value. This is not worn equipment, but items that the character has in their inventory. To be in a characters inventory, they must be actively carrying the item. Items in the inventory are not equiped, and are not being worn by the character. They CANNOT be on the ground, in a box, on a table, etc. They MUST be in the character's possession on their person.")
 
 class BodyPartDescriptions(BaseModel):
-    """Body Part Descriptions Schema - A set of descriptions for a character's body parts. Should not describe their clothes or equipment in any way. The descriptions are intended to be combined into a single description with linebreaks between each part in the final output, so write them such that they should cohesively flow together, seperated by new lines, and not repeat themselves. All fields are required to have a value. Body part descriptions should only use the characters gender to refer to them, never by name. Example: \"She has a cute face.\""""
+    """Body Part Descriptions Schema - A set of descriptions for a character's body parts. Should not describe their clothes or equipment in any way. The descriptions are intended to be combined into a single description with linebreaks between each part in the final output, so write them such that they should cohesively flow together, seperated by new lines, and not repeat themselves. All fields are required to have a value. Body part descriptions should only use the characters gender to refer to them, never by name. Example: \"She has a cute face.\" Additionally, NEVER mention what the NPC is wearing when describing their body parts. All clothing MUST be an equipment item."""
     hair_description: str = Field(...,description="A description of the character's hair. Should be at least a paragraph long and explicitly and graphically describe the character's hair.", min_length=1, examples=[
         "She has long, flowing, blonde hair that cascades down her back in gentle waves."
     ], pattern="^(His|Her|He|She)([A-Za-z0-9 ])*$")
     face_description: str = Field(...,description="A description of the character's face. Should be at least a paragraph long and explicitly and graphically describe the character's nude face.", min_length=1, examples=[
         "She has a cute face with big, bright eyes and a small, upturned nose."
     ], pattern="^(His|Her|He|She)([A-Za-z0-9 ])*$")
-    bare_chest_description: str = Field(...,description="A description of the character's chest without clothes. Should be at least a paragraph long and explicitly and graphically describe the character's nude chest.", min_length=1, examples=[
+    naked_bare_chest_descriptioniption: str = Field(...,description="A description of the character's chest without clothes. Should be at least a paragraph long and explicitly and graphically describe the character's nude chest.", min_length=1, examples=[
         "She has a perky pair of breasts with small, pink nipples that stand out against her pale skin."
     ], pattern="^(His|Her|He|She)([A-Za-z0-9 ])*$")
     abdomen_description: str = Field(...,description="A description of the character's abdomen not including the chest or genitals. Should be at least a paragraph long and explicitly and graphically describe the character's nude body.", min_length=1, examples=[
         "Her abdomen is flat and toned, with a small belly button in the center."
     ], pattern="^(His|Her|He|She)([A-Za-z0-9 ])*$")
-    genital_description: str = Field(...,description="A description of the character's genitals. Should be at least a paragraph long and explicitly and graphically describe the character's nude genitals.", min_length=1, examples=[
+    naked_genital_description: str = Field(...,description="A description of the character's genitals. Should be at least a paragraph long and explicitly and graphically describe the character's nude genitals.", min_length=1, examples=[
         "She has a small, neatly trimmed bush of pubic hair above her pussy, which is small and tight."
     ], pattern="^(His|Her|He|She|Between)([A-Za-z0-9 ])*$")
     butt_description: str = Field(...,description="A description of the character's butt. Should be at least a paragraph long and explicitly and graphically describe the character's nude butt.", min_length=1, examples=[
@@ -321,7 +340,7 @@ class BodyPartDescriptions(BaseModel):
     ], pattern="^(His|Her|He|She)([A-Za-z0-9 ])*$")
 
 class Character(BaseModel):
-    """Character Schema - No stats, just descriptions. The descriptions are intended to be combined into a single description with linebreaks between each part in the final output, so write them such that Personality, Appearance, and Scenario are all separate sections. that should cohesively flow together, seperated by new lines, and not repeat themselves. Drives are what motivates the character, and can be things like "Revenge on the bandits who killed their family" or "To find the lost city of gold". Tags are used to help search for characters, and can be things like "Elf", "Wizard", "Pirate", etc. The voice description is seperate from the other descriptions, and should be able to exist by itself without the other descriptions. It should describe how the character should sound. All descriptions should be at least a paragraph long, and the first message should be at least a sentence long, but longer is not bad. The backstory is the character's history, and should be at least a paragraph long. The naked body description is what the character looks like without clothes, and should be at least a paragraph long and explicitly and graphically describe the character's nude body. All fields are required to have a value."""
+    """Character Schema - No stats, just descriptions. The descriptions are intended to be combined into a single description with linebreaks between each part in the final output, so write them such that Personality, Appearance, and Scenario are all separate sections. that should cohesively flow together, seperated by new lines, and not repeat themselves. Drives are what motivates the character, and can be things like "Revenge on the bandits who killed their family" or "To find the lost city of gold". Tags are used to help search for characters, and can be things like "Elf", "Wizard", "Pirate", etc. The voice description is seperate from the other descriptions, and should be able to exist by itself without the other descriptions. It should describe how the character should sound. All descriptions should be at least a paragraph long, and the first message should be at least a sentence long, but longer is not bad. The backstory is the character's history, and should be at least a paragraph long. The naked body description is what the character looks like without clothes, and should be at least a paragraph long and explicitly and graphically describe the character's nude body. All fields are required to have a value. Make sure characters are wearing adequate clothing for the scenario requested(or lack of clothing if it's necessary). Example: If someone is from the middle ages, they should be wearing era appropriate equipemnt!"""
     full_name: str
     nick_name: str
     age: int = Field(...)
@@ -330,10 +349,10 @@ class Character(BaseModel):
     species: str
     special_attributes: SPECIALAttributes
     stats: Stats = Field(None,description="The character's stats. This is used for things like how much damage the character can take before dying, etc.")
-    equipment: Equipment
+    equipment: Equipment = Field(...,description="The character's equipment. This is used for things like what the character is wearing, what weapons they have, etc.")
     hex_color: str = Field(...,description="The hex color code for the character's name. Should be a 6 character hex code, without the #.",pattern="^([0-9A-Fa-f]{6})$")
     personality_description: str
-    body_part_desctiptions: BodyPartDescriptions
+    naked_body_part_descriptions: BodyPartDescriptions
     backstory: str = Field(...,description="A description of the character's backstory. Should be at least a paragraph long.", min_length=1)
     processing: bool = True
 
@@ -409,46 +428,45 @@ class Character(BaseModel):
     def get_physical_description(self):
         # return physical appearance accounting for equipment
         description = ""
-        wearing_full_body_suit = False
         if self.equipment.headwear:
             description += f"{self.get_pronouns()['subject'].capitalize()}'s wearing {self.equipment.headwear.physical_description}\n"
             if not self.equipment.headwear.covers_hair:
-                description += f"{self.body_part_desctiptions.hair_description}\n"
+                description += f"{self.naked_body_part_descriptions.hair_description}\n"
             if not self.equipment.headwear.covers_face:
-                description += f"{self.body_part_desctiptions.face_description}\n"
+                description += f"{self.naked_body_part_descriptions.face_description}\n"
         else:
-            description += f"{self.body_part_desctiptions.hair_description}\n"
+            description += f"{self.naked_body_part_descriptions.hair_description}\n"
         if self.equipment.upperbodywear:
             description += f"{self.get_pronouns()['subject'].capitalize()}'s wearing {self.equipment.upperbodywear.physical_description[0].lower()}{self.equipment.upperbodywear.physical_description[1:]}\n"
-            if not self.equipment.upperbodywear.covers_breasts:
-                description += f"{self.body_part_desctiptions.bare_chest_description}\n"
-            if not self.equipment.upperbodywear.covers_belly:
-                description += f"{self.body_part_desctiptions.abdomen_description}\n"
-            if self.equipment.upperbodywear.full_body_suit:
-                wearing_full_body_suit = True
+            if not self.equipment.upperbodywear.covers_breasts and not self.equipment.fullbodywear.covers_breasts:
+                description += f"{self.naked_body_part_descriptions.naked_bare_chest_descriptioniption}\n"
+            if not self.equipment.upperbodywear.covers_belly and not self.equipment.fullbodywear.covers_belly:
+                description += f"{self.naked_body_part_descriptions.abdomen_description}\n"
         else:
-            description += f"{self.body_part_desctiptions.bare_chest_description}\n"
+            description += f"{self.naked_body_part_descriptions.naked_bare_chest_descriptioniption}\n"
         if self.equipment.gloves:
             description += f"{self.get_pronouns()['subject'].capitalize()}'s wearing {self.equipment.gloves.physical_description[0].lower()}{self.equipment.gloves.physical_description[1:]}\n"
         else:
-            description += f"{self.body_part_desctiptions.hands_description}\n"
+            description += f"{self.naked_body_part_descriptions.hands_description}\n"
         if self.equipment.lowerbodywear:
             description += f"{self.get_pronouns()['subject'].capitalize()}'s wearing {self.equipment.lowerbodywear.physical_description[0].lower()}{self.equipment.lowerbodywear.physical_description[1:]}\n"
-            if not self.equipment.lowerbodywear.covers_legs and not wearing_full_body_suit:
-                description += f"{self.body_part_desctiptions.legs_description}\n"
-            if not self.equipment.lowerbodywear.covers_genitals and not wearing_full_body_suit:
-                description += f"{self.body_part_desctiptions.genital_description}\n"
-            if not self.equipment.lowerbodywear.covers_butt and not wearing_full_body_suit:
-                description += f"{self.body_part_desctiptions.butt_description}\n"
+            if not self.equipment.lowerbodywear.covers_legs and not self.equipment.fullbodywear.covers_legs:
+                description += f"{self.naked_body_part_descriptions.legs_description}\n"
+            if not self.equipment.lowerbodywear.covers_genitals and not self.equipment.fullbodywear.covers_genitals:
+                description += f"{self.naked_body_part_descriptions.naked_genital_description}\n"
+            if not self.equipment.lowerbodywear.covers_butt and not self.equipment.fullbodywear.covers_butt:
+                description += f"{self.naked_body_part_descriptions.butt_description}\n"
         else:
-            if not wearing_full_body_suit:
-                description += f"{self.body_part_desctiptions.legs_description}\n"
-                description += f"{self.body_part_desctiptions.genital_description}\n"
-                description += f"{self.body_part_desctiptions.butt_description}\n"
+            if not self.equipment.fullbodywear.covers_legs:
+                description += f"{self.naked_body_part_descriptions.legs_description}\n"
+            if not self.equipment.fullbodywear.covers_genitals:
+                description += f"{self.naked_body_part_descriptions.naked_genital_description}\n"
+            if not self.equipment.fullbodywear.covers_butt:
+                description += f"{self.naked_body_part_descriptions.butt_description}\n"
         if self.equipment.footwear:
             description += f"{self.get_pronouns()['subject'].capitalize()}'s wearing {self.equipment.footwear.physical_description[0].lower()}{self.equipment.footwear.physical_description[1:]}\n"
         else:
-            description += f"{self.body_part_desctiptions.feet_description}\n"
+            description += f"{self.naked_body_part_descriptions.feet_description}\n"
         if self.stats.hp <= 0:
             description += f"{self.get_pronouns()['subject'].capitalize()} is dead."
             if self.equipment.equiped_weapon:
@@ -456,6 +474,14 @@ class Character(BaseModel):
         else:
             if self.equipment.equiped_weapon:
                 description += f"{self.get_pronouns()['subject'].capitalize()} is holding a {self.equipment.equiped_weapon.physical_description}."
+        description.replace("...","[ellipsis]")
+        while ".." in description:
+            description = description.replace("..",".")
+        description = description.replace("[ellipsis]","...")
+        while "!." in description:
+            description = description.replace("!.","!")
+        while "?." in description:
+            description = description.replace("?.","?")
         return description.strip()
 
     def get_equipment_description(self):
@@ -476,6 +502,14 @@ class Character(BaseModel):
         description = description.strip()
         if description == "":
             description = f"{self.get_pronouns()['subject'].capitalize()} is completely naked."
+        description.replace("...","[ellipsis]")
+        while ".." in description:
+            description = description.replace("..",".")
+        description = description.replace("[ellipsis]","...")
+        while "!." in description:
+            description = description.replace("!.","!")
+        while "?." in description:
+            description = description.replace("?.","?")
         return description
 
 class Container(BaseItem):
@@ -498,7 +532,7 @@ class Location(BaseModel):
         "The Deserted Island",
         "The Lost City"
     ])
-    location_physical_description: str = Field(description="A description of the location. Should be at least a paragraph long. MUST NOT contain any information about items or characters in the location. This should strictly be a description of the location without any storytelling involved. No talking about how the player moves, don't include plot elements or thoughts that the player is thinking, merely describe the location as detailedly as possible. This should NOT describe the items or characters in the location, only the physical description of the location itself. If the user's prompt includes objects or characters in the location, they should be described in the objects_in_location and characters_in_location fields ONLY.", min_length=1, examples=[
+    location_physical_description: str = Field(description="A description of the location. Should be at least a paragraph long. MUST NOT contain any information about items or characters in the location. This should strictly be a description of the location without any storytelling involved. No talking about how the player moves, don't include plot elements or thoughts that the player is thinking, merely describe the location as detailedly as possible. This should NOT describe the items or characters in the location, only the physical description of the location itself. If the user's prompt includes objects or characters in the location, they should be described in the objects_in_location and npcs_in_location fields ONLY.", min_length=1, examples=[
         "A dark, damp cave with a low ceiling and a musty smell.",
         "A dense, overgrown forest with tall trees and thick underbrush.",
         "A large, spooky mansion with creaky floors and drafty hallways.",
@@ -508,7 +542,7 @@ class Location(BaseModel):
     ])
     travel_destinations: list[TravelableLocation] = Field(description="A list of locations that can be traveled to from this location. Each travelable location should have a portal, location name, and location prompt. All possible travelable locations from this location. If this is in a section of a town for instance, it could have a travelable location to the market, the inn, the blacksmith, travelable locations out of town, travelable locations to the other parts of town, etc. Be detailed when coming up with travelable locations. Travel locations should usually be logical and reasonable. For example, if you're lost in a white void with just a cake, you could do \"Explore the void\" but wouldn't do \"The Cake\" unless the cake was large enough to stand on.", min_length=1)
     objects_in_location: list[Union[Item,Food,Weapon,Headwear,Footwear,Gloves,LowerBodywear,UpperBodywear,Accessory]] = Field(description="A list of objects in the location. Each item should have a name, description, value, weight. All items in the location. This can be furniture, or small objects that characters can interact with. If the item is food, it should have a hunger restored and thirst restored value. If the item is a weapon, it should have a damage value and required SPECIAL stats. If an item is a weapon, it MUST have a damage value and required SPECIAL stats. If an item is food, it MUST have a hunger restored and thirst restored value.")
-    characters_in_location: list[Character] = Field(description="A list of characters in the location.")
+    npcs_in_location: list[Character] = Field(description="A list of characters in the location.")
 
 class SomeItem(BaseModel):
     """SomeItem Schema - Any item in a text adventure game. All fields are required to have a value."""
@@ -566,6 +600,7 @@ class TextAIventureEngine():
         self.story_vibe:str = None
         self.story_aesthetic:str = None
         self.starting_location:Location = None
+        self.current_location:Location = None
         self.locations: list[Location] = []
         self.characters: list[Character] = []
         self.met: list[Character] = []
@@ -628,7 +663,7 @@ class TextAIventureEngine():
                 story_json = completion.choices[0].message.content
                 story_json = json.loads(story_json)
                 story = Story(**story_json)
-                for character in story.starting_location.characters_in_location:
+                for character in story.starting_location.npcs_in_location:
                     if character.equipment.headwear != None:
                         if character.equipment.headwear.name.lower() == "none" or character.equipment.headwear.name.lower() == "null" or character.equipment.headwear.name.strip() == "":
                             character.equipment.headwear = None
@@ -660,12 +695,7 @@ class TextAIventureEngine():
                     for item in character.equipment.inventory:
                         if item.name.lower() == "none" or item.name.lower() == "null" or item.name.strip() == "":
                             character.equipment.inventory.remove(item)
-                    # overwrite the character with the new one
-                    for c in self.characters:
-                        if c.full_name == character.full_name:
-                            self.characters.remove(c)
-                            self.characters.append(character)
-                            break
+                    
                 story_json = json.loads(story.model_dump_json())
                 if self.verbose:
                     print(json.dumps(story_json,indent=4))
@@ -688,7 +718,7 @@ class TextAIventureEngine():
             },
             {
                 "role": "system",
-                "content": f"The setting is {self.story_setting}, the vibe is {self.story_vibe} and the aesthetic is {self.story_aesthetic}."
+                "content": f"The vibe is {self.story_vibe} and the aesthetic is {self.story_aesthetic}."
             }
         ]
         schema = Location.model_json_schema()
@@ -739,7 +769,7 @@ class TextAIventureEngine():
             },
             {
                 "role": "system",
-                "content": f"The setting is {self.story_setting}, the vibe is {self.story_vibe} and the aesthetic is {self.story_aesthetic}."
+                "content": f"The vibe is {self.story_vibe} and the aesthetic is {self.story_aesthetic}."
             }
         ]
         schema = Location.model_json_schema()
@@ -794,7 +824,7 @@ class TextAIventureEngine():
             },
             {
                 "role": "system",
-                "content": f"The setting is {self.story_setting}, the vibe is {self.story_vibe} and the aesthetic is {self.story_aesthetic}."
+                "content": f"The vibe is {self.story_vibe} and the aesthetic is {self.story_aesthetic}."
             }
         ]
         schema = TravelableLocation.model_json_schema()
@@ -849,7 +879,7 @@ class TextAIventureEngine():
             },
             {
                 "role": "system",
-                "content": f"The setting is {self.story_setting}, the vibe is {self.story_vibe} and the aesthetic is {self.story_aesthetic}."
+                "content": f"The vibe is {self.story_vibe} and the aesthetic is {self.story_aesthetic}."
             }
         ]
         if previous_method_of_travel != None:
@@ -899,40 +929,41 @@ class TextAIventureEngine():
         self.story_vibe = story.vibe
         self.story_aesthetic = story.aesthetic
         self.starting_location = story.starting_location
+        self.current_location = story.starting_location
         self.locations.append(story.starting_location)
     
-    def travel_to_location_from(self, from_location:Location, travelable_location:TravelableLocation):
+    def travel_to_location(self, travelable_location:TravelableLocation):
         next_location = None
         for loc in self.locations:
             if loc.name == travelable_location.location_name:
                 next_location = loc
                 break
         if next_location == None: # location doesn't exist yet
-            next_location = self.generate_location_from_travelable_location(from_location, travelable_location) # generate the location
+            next_location = self.generate_location_from_travelable_location(travelable_location) # generate the location
             next_location.name = travelable_location.location_name
             self.locations.append(next_location)
         can_travel = False
-        for t_location in from_location.travel_destinations:
+        for t_location in self.current_location.travel_destinations:
             if t_location.portal == travelable_location.portal:
                 can_travel = True
                 break
         if can_travel:
             already_has_between_location = False
             for travelable_l in next_location.travel_destinations:
-                if travelable_l.location_name == from_location.name:
+                if travelable_l.location_name == self.current_location.name:
                     # print("Already has a travelable location between",previous_location.name,"and",location.name)
                     already_has_between_location = True
                     break
             if not already_has_between_location: 
                 portal_already_exists = False
                 while not portal_already_exists:
-                    between_location = self.generate_travelable_location_between(next_location, from_location, travelable_location.movement_description) # generate the travelable location for coming back
-                    for t_location in from_location.travel_destinations:
+                    between_location = self.generate_travelable_location_between(next_location, self.current_location, travelable_location.movement_description) # generate the travelable location for coming back
+                    for t_location in self.current_location.travel_destinations:
                         if t_location.portal == between_location.portal:
                             portal_already_exists = True
                             break
                     if not portal_already_exists:
-                        between_location.location_name = from_location.name
+                        between_location.location_name = self.current_location.name
                         next_location.travel_destinations.append(between_location)
                         portal_already_exists = True
             # print(f"Travelling to {next_location.name}...")
@@ -942,15 +973,16 @@ class TextAIventureEngine():
                 if t_location.location_name == next_location.name:
                     next_location.travel_destinations.remove(t_location)
                     break
-            self.travel_order.append(from_location) # add the previous location to the travel order
+            self.travel_order.append(self.current_location) # add the previous location to the travel order
             if len(self.travel_order) > 5: # remove the oldest location from the travel order if it's longer than 5
                 self.travel_order.pop(0)
+            self.current_location = next_location
             return next_location
         else:
             print("You can't travel to that location from here!")
-            return from_location
+            return self.current_location
         
-    def generate_location_from_travelable_location(self, from_location:Location, travelable_location:TravelableLocation):
+    def generate_location_from_travelable_location(self, travelable_location:TravelableLocation):
         if self.verbose:
             print("Generating Location from Travelable Location:",travelable_location.location_name)
         messages = [
@@ -960,22 +992,28 @@ class TextAIventureEngine():
             },
             {
                 "role": "system",
-                "content": f"The previous location was {from_location.name}.\n{from_location.location_physical_description}"
-            },
-            {
-                "role": "system",
                 "content": f"The vibe is {self.story_vibe} and the aesthetic is {self.story_aesthetic}."
-            }
+            },
         ]
+        if len(self.travel_order) > 0:
+            for loc in self.travel_order:
+                messages.append({
+                    "role": "system",
+                    "content": f"The user has previously visited {loc.name}.\n{loc.location_physical_description}"
+                })
+        messages.append({
+            "role": "system",
+            "content": f"The previous location was {self.current_location.name}.\n{self.current_location.location_physical_description}"
+        })
         schema = Location.model_json_schema()
         schema_description = get_schema_description(schema)
         messages.append({
-            "role": "system",
-            "content": schema_description
-        })
-        messages.append({
             "role": "user",
             "content": "Generate a location based on the following prompt:"+travelable_location.location_description
+        })
+        messages.append({
+            "role": "system",
+            "content": schema_description
         })
         location = None
         while location == None:
@@ -1012,17 +1050,31 @@ class TextAIventureEngine():
             {
                 "role": "system",
                 "content": "The assistant is generating a character JSON to run the text adventure game with. It will adhere to the JSON schema for a character, and will be returned as a JSON object. Below is reference for the schema for a character.",
-            }
+            },
+            {
+                "role": "system",
+                "content": "The vibe is {self.story_vibe} and the aesthetic is {self.story_aesthetic}."
+            },
         ]
+        if len(self.travel_order) > 0:
+            for loc in self.travel_order:
+                messages.append({
+                    "role": "system",
+                    "content": f"The user has previously visited {loc.name}.\n{loc.location_physical_description}"
+                })
+        messages.append({
+            "role": "system",
+            "content": f"The current location is {self.current_location.name}.\n{self.current_location.location_physical_description}"
+        })
         schema = Character.model_json_schema()
         schema_description = get_schema_description(schema)
         messages.append({
-            "role": "system",
-            "content": schema_description
-        })
-        messages.append({
             "role": "user",
             "content": "Generate a character based on the following prompt:"+prompt
+        })
+        messages.append({
+            "role": "system",
+            "content": schema_description
         })
         character = None
         while character == None:
@@ -1045,6 +1097,38 @@ class TextAIventureEngine():
                 character_json = completion.choices[0].message.content
                 character_json = json.loads(character_json)
                 character = Character(**character_json)
+                if character.equipment.headwear != None:
+                    if character.equipment.headwear.name.lower() == "none" or character.equipment.headwear.name.lower() == "null" or character.equipment.headwear.name.strip() == "":
+                        character.equipment.headwear = None
+                if character.equipment.upperbodywear != None:
+                    if character.equipment.upperbodywear.name.lower() == "none" or character.equipment.upperbodywear.name.lower() == "null" or character.equipment.upperbodywear.name.strip() == "":
+                        character.equipment.upperbodywear = None
+                # if character.equipment.top_underwear != None:
+                #     if character.equipment.top_underwear.name.lower() == "none" or character.equipment.top_underwear.name.lower() == "null" or character.equipment.top_underwear.name.strip() == "":
+                #         character.equipment.top_underwear = None
+                if character.equipment.gloves != None:
+                    if character.equipment.gloves.name.lower() == "none" or character.equipment.gloves.name.lower() == "null" or character.equipment.gloves.name.strip() == "":
+                        character.equipment.gloves = None
+                # if character.equipment.bottom_underwear != None:
+                #     if character.equipment.bottom_underwear.name.lower() == "none" or character.equipment.bottom_underwear.name.lower() == "null" or character.equipment.bottom_underwear.name.strip() == "":
+                #         character.equipment.bottom_underwear = None
+                if character.equipment.lowerbodywear != None:
+                    if character.equipment.lowerbodywear.name.lower() == "none" or character.equipment.lowerbodywear.name.lower() == "null" or character.equipment.lowerbodywear.name.strip() == "":
+                        character.equipment.lowerbodywear = None
+                if character.equipment.footwear != None:
+                    if character.equipment.footwear.name.lower() == "none" or character.equipment.footwear.name.lower() == "null" or character.equipment.footwear.name.strip() == "":
+                        character.equipment.footwear = None
+                if character.equipment.equiped_weapon != None:
+                    if character.equipment.equiped_weapon.name.lower() == "none" or character.equipment.equiped_weapon.name.lower() == "null" or character.equipment.equiped_weapon.name.strip() == "":
+                        character.equipment.equiped_weapon = None
+                if character.equipment.accessories != None:
+                    for item in character.equipment.accessories:
+                        if item.name.lower() == "none" or item.name.lower() == "null" or item.name.strip() == "":
+                            character.equipment.accessories.remove(item)
+                for item in character.equipment.inventory:
+                    if item.name.lower() == "none" or item.name.lower() == "null" or item.name.strip() == "":
+                        character.equipment.inventory.remove(item)
+                character_json = json.loads(character.model_dump_json())
                 print(json.dumps(character_json,indent=4))
             except Exception as e:
                 # print(e)
@@ -1110,17 +1194,31 @@ while not ready:
         text_adventure.set_story(story)
         ready = True
     
-current_location = text_adventure.starting_location
+
 player_prompt = input("Enter a prompt for your character: ")
 
 happy_with_generated_character = False
+edit_character = False
 while not happy_with_generated_character:
     print("Generating player character...")
     player = text_adventure.generate_character_from_prompt(player_prompt)
-    player_response = input("Are you happy with this character? (y to confirm, or hit Enter to try again): ")
+    player_response = input("Are you happy with this character? (y to confirm, hit Enter to try again, type 'prompt' to enter a new prompt, or type 'edit' to edit the character): ")
     if player_response.lower() == "prompt" or player_response.lower() == "p" or player_response.lower() == "back" or player_response.lower() == "b":
         player_prompt = input("Enter a new prompt for your character: ")
-    happy_with_generated_character = player_response.lower() == "y"
+    elif player_response.lower() == "edit" or player_response.lower() == "e":
+        happy_with_generated_character = True
+        edit_character = True
+    else:
+        happy_with_generated_character = player_response.lower() == "y"
+
+if edit_character:
+    player_name = input("Enter the name of your character: ")
+    player.full_name = player_name
+    player_age = input("Enter the age of your character: ")
+    player.age = int(player_age)
+    player_race = input("Enter the race of your character: ")
+    player.race = player_race
+    print("Can't edit the rest of the character!")
 
 print("SPECIAL Attributes:")
 print(f"Strength: {str(player.special_attributes.strength)}")
@@ -1162,10 +1260,10 @@ if change_special:
     print(f"Luck: {str(player.special_attributes.luck)}")
     
 def print_current_screen():
-    description = f"You're currently in {current_location.name}.\n\n{current_location.location_physical_description}\n\n"
-    if len(current_location.characters_in_location) > 0:
+    description = f"You're currently in {text_adventure.current_location.name}.\n\n{text_adventure.current_location.location_physical_description}\n\n"
+    if len(text_adventure.current_location.npcs_in_location) > 0:
         # description += "There are people here:\n"
-        for character in current_location.characters_in_location:
+        for character in text_adventure.current_location.npcs_in_location:
             if character in text_adventure.met:
                 description += f"{character.full_name} is here. {character.get_equipment_description()} "
                 if character.stats.hp <= 0:
@@ -1179,18 +1277,18 @@ def print_current_screen():
                 description = description.strip()
                 description += "\n"
     description = description.strip()
-    if len(current_location.objects_in_location) > 0:
+    if len(text_adventure.current_location.objects_in_location) > 0:
         description += "\nItems:\n"
-        for item in current_location.objects_in_location:
+        for item in text_adventure.current_location.objects_in_location:
             position_in_location = item.position_in_location[0].lower() + item.position_in_location[1:]
             if position_in_location[-1] != ".":
                 position_in_location += "."
             description += f"There's a \"{item.name}\" {position_in_location}\n"
     description = description.strip()
-    if len(current_location.travel_destinations) > 0:
+    if len(text_adventure.current_location.travel_destinations) > 0:
         description += "\n---------------------------------\n"
         description += "Travelable Locations From Here:\n"
-        for location in current_location.travel_destinations:
+        for location in text_adventure.current_location.travel_destinations:
             description += f"\"{location.portal}\" - {location.location_name}\n"
     
     print(description.strip())
@@ -1212,6 +1310,7 @@ while True: # Main game loop
     if action.lower() == "help" or action.lower() == "h" or action.lower() == "?":
         print("Commands:")
         print("look - Look around the current location.")
+        print("inspect - Inspect an item in your inventory.")
         print("travel - Travel to a different location.")
         print("inventory - View your inventory.")
         print("stats - View your stats.")
@@ -1252,13 +1351,13 @@ while True: # Main game loop
                 print(f"{player.full_name} is holding {player.equipment.equiped_weapon.physical_description}.")
         else:
             item_found = False
-            for item in current_location.objects_in_location:
+            for item in text_adventure.current_location.objects_in_location:
                 if at.lower() in item.name.lower():
                     print(f"{item.name} - {item.physical_description}")
                     item_found = True
                     break
             if not item_found:
-                for character in current_location.characters_in_location:
+                for character in text_adventure.current_location.npcs_in_location:
                     if at.lower() in character.full_name.lower():
                         if character in text_adventure.met:
                             print(f"{character.get_description()}\n{character.get_physical_description()}")
@@ -1280,7 +1379,7 @@ while True: # Main game loop
                         item_found = True
                         break
             if not item_found:
-                for item in current_location.objects_in_location:
+                for item in text_adventure.current_location.objects_in_location:
                     if item.type_string.lower() == "container":
                         for container_item in item.items:
                             if at.lower() in container_item.name.lower() or at.lower() in container_item.physical_description.lower():
@@ -1296,10 +1395,10 @@ while True: # Main game loop
             continue
         travel_to = action_args[1]
         location_found = False
-        last_location_name = current_location.name
-        for t_location in current_location.travel_destinations:
+        last_location_name = text_adventure.current_location.name
+        for t_location in text_adventure.current_location.travel_destinations:
             if travel_to.lower() in t_location.portal.lower() or travel_to.lower() in t_location.location_name.lower():
-                current_location = text_adventure.travel_to_location_from(current_location, t_location)
+                text_adventure.travel_to_location(t_location)
                 location_found = True
                 break
         # if not location_found:
@@ -1310,10 +1409,10 @@ while True: # Main game loop
         #             break
         if not location_found:
             print(f"Travelable location not found: {travel_to}\nGenerating new location...")
-            travelable_location = text_adventure.generate_travelable_location(current_location, travel_to)
-            current_location.travel_destinations.append(travelable_location)
-            current_location = text_adventure.travel_to_location_from(current_location, travelable_location)
-        if last_location_name != current_location.name:
+            travelable_location = text_adventure.generate_travelable_location(text_adventure.current_location, travel_to)
+            text_adventure.current_location.travel_destinations.append(travelable_location)
+            text_adventure.travel_to_location(travelable_location)
+        if last_location_name != text_adventure.current_location.name:
             print_current_screen()
     elif action.lower() == "inventory" or action.lower() == "i" or action.lower() == "inv":
         print(f"You have {len(player.equipment.inventory)} items in your inventory:")
@@ -1338,10 +1437,10 @@ while True: # Main game loop
             continue
         item_to_take = action_args[1]
         item_found = False
-        for item in current_location.objects_in_location:
+        for item in text_adventure.current_location.objects_in_location:
             if item_to_take.lower() in item.name.lower():
                 player.equipment.inventory.append(item)
-                current_location.objects_in_location.remove(item)
+                text_adventure.current_location.objects_in_location.remove(item)
                 item_found = True
                 print(f"You picked up the {item.name}.")
                 break
@@ -1352,13 +1451,13 @@ while True: # Main game loop
                         player.equipment.inventory.append(container_item)
                         item.items.remove(container_item)
                         for location in text_adventure.locations:
-                            if location.name == current_location.name:
-                                location.objects_in_location = current_location.objects_in_location
+                            if location.name == text_adventure.current_location.name:
+                                location.objects_in_location = text_adventure.current_location.objects_in_location
                                 break
                         item_found = True
                         print(f"You took the {container_item.name} from the {item.name}.")
         if not item_found:
-            for character in current_location.characters_in_location:
+            for character in text_adventure.current_location.npcs_in_location:
                 print(f"Searching {character.full_name} for {item_to_take}...")
                 if character.equipment.headwear != None:
                     if item_to_take.lower() in character.equipment.headwear.name.lower() or item_to_take.lower() in character.equipment.headwear.physical_description.lower():
@@ -1466,11 +1565,11 @@ while True: # Main game loop
         item_found = False
         for item in player.equipment.inventory:
             if item_to_drop.lower() in item.name.lower() or item_to_drop.lower() in item.physical_description.lower():
-                current_location.objects_in_location.append(item)
+                text_adventure.current_location.objects_in_location.append(item)
                 player.equipment.inventory.remove(item)
                 for location in text_adventure.locations:
-                    if location.name == current_location.name:
-                        location.objects_in_location = current_location.objects_in_location
+                    if location.name == text_adventure.current_location.name:
+                        location.objects_in_location = text_adventure.current_location.objects_in_location
                         break
                 item_found = True
                 print(f"You dropped the {item.name}.")
@@ -1492,13 +1591,13 @@ while True: # Main game loop
             print(f"Item not found in your inventory: {item_to_put}")
             continue
         where_to_put = input("Where would you like to put the item?> ")
-        for item in current_location.objects_in_location:
+        for item in text_adventure.current_location.objects_in_location:
             if where_to_put.lower() in item.name.lower():
                 item.items.append(inventory_found)
                 player.equipment.inventory.remove(inventory_found)
                 for location in text_adventure.locations:
-                    if location.name == current_location.name:
-                        location.objects_in_location = current_location.objects_in_location
+                    if location.name == text_adventure.current_location.name:
+                        location.objects_in_location = text_adventure.current_location.objects_in_location
                         break
                 item_found = True
                 print(f"You put the {inventory_found.name} in the {item.name}.")
@@ -1516,8 +1615,8 @@ while True: # Main game loop
                     player.equipment.equiped_weapon = item
                     player.equipment.inventory.remove(item)
                     for location in text_adventure.locations:
-                        if location.name == current_location.name:
-                            location.objects_in_location = current_location.objects_in_location
+                        if location.name == text_adventure.current_location.name:
+                            location.objects_in_location = text_adventure.current_location.objects_in_location
                             break
                     item_found = True
                     print(f"You equipped the {item.name}.")
@@ -1526,8 +1625,8 @@ while True: # Main game loop
                     player.equipment.headwear = item
                     player.equipment.inventory.remove(item)
                     for location in text_adventure.locations:
-                        if location.name == current_location.name:
-                            location.objects_in_location = current_location.objects_in_location
+                        if location.name == text_adventure.current_location.name:
+                            location.objects_in_location = text_adventure.current_location.objects_in_location
                             break
                     item_found = True
                     print(f"You equipped the {item.name}.")
@@ -1536,8 +1635,8 @@ while True: # Main game loop
                     player.equipment.upperbodywear = item
                     player.equipment.inventory.remove(item)
                     for location in text_adventure.locations:
-                        if location.name == current_location.name:
-                            location.objects_in_location = current_location.objects_in_location
+                        if location.name == text_adventure.current_location.name:
+                            location.objects_in_location = text_adventure.current_location.objects_in_location
                             break
                     item_found = True
                     print(f"You equipped the {item.name}.")
@@ -1546,8 +1645,8 @@ while True: # Main game loop
                     player.equipment.lowerbodywear = item
                     player.equipment.inventory.remove(item)
                     for location in text_adventure.locations:
-                        if location.name == current_location.name:
-                            location.objects_in_location = current_location.objects_in_location
+                        if location.name == text_adventure.current_location.name:
+                            location.objects_in_location = text_adventure.current_location.objects_in_location
                             break
                     item_found = True
                     print(f"You equipped the {item.name}.")
@@ -1556,8 +1655,8 @@ while True: # Main game loop
                     player.equipment.footwear = item
                     player.equipment.inventory.remove(item)
                     for location in text_adventure.locations:
-                        if location.name == current_location.name:
-                            location.objects_in_location = current_location.objects_in_location
+                        if location.name == text_adventure.current_location.name:
+                            location.objects_in_location = text_adventure.current_location.objects_in_location
                             break
                     item_found = True
                     print(f"You equipped the {item.name}.")
@@ -1566,8 +1665,8 @@ while True: # Main game loop
                     player.equipment.gloves = item
                     player.equipment.inventory.remove(item)
                     for location in text_adventure.locations:
-                        if location.name == current_location.name:
-                            location.objects_in_location = current_location.objects_in_location
+                        if location.name == text_adventure.current_location.name:
+                            location.objects_in_location = text_adventure.current_location.objects_in_location
                             break
                     item_found = True
                     print(f"You equipped the {item.name}.")
@@ -1576,8 +1675,8 @@ while True: # Main game loop
                     player.equipment.accessories.append(item)
                     player.equipment.inventory.remove(item)
                     for location in text_adventure.locations:
-                        if location.name == current_location.name:
-                            location.objects_in_location = current_location.objects_in_location
+                        if location.name == text_adventure.current_location.name:
+                            location.objects_in_location = text_adventure.current_location.objects_in_location
                             break
                     item_found = True
                     print(f"You equipped the {item.name}.")
@@ -1596,8 +1695,8 @@ while True: # Main game loop
                 player.equipment.inventory.append(item)
                 player.equipment.remove(item)
                 for location in text_adventure.locations:
-                    if location.name == current_location.name:
-                        location.objects_in_location = current_location.objects_in_location
+                    if location.name == text_adventure.current_location.name:
+                        location.objects_in_location = text_adventure.current_location.objects_in_location
                         break
                 item_found = True
                 print(f"You unequipped the {item.name}.")
@@ -1613,14 +1712,14 @@ while True: # Main game loop
         # item_found = False
         # for item in text_adventure.items:
         #     if item_to_spawn.lower() in item.name.lower() or item_to_spawn.lower() in item.physical_description.lower():
-        #         current_location.objects_in_location.append(item)
+        #         text_adventure.current_location.objects_in_location.append(item)
         #         item_found = True
         #         print(f"You spawned '{item.name}' in the current location.")
         #         break
         # if not item_found:
         # Generate the item
         item = text_adventure.generate_item_from_prompt(item_to_spawn)
-        current_location.objects_in_location.append(item)
+        text_adventure.current_location.objects_in_location.append(item)
         item_found = True
         print(f"You spawned '{item.name}' in the current location.")
     elif action_args[0].lower() == "spawn_character":
@@ -1632,14 +1731,14 @@ while True: # Main game loop
         # character_found = False
         # for character in text_adventure.characters:
         #     if character_to_spawn.lower() in character.full_name.lower():
-        #         current_location.characters_in_location.append(character)
+        #         text_adventure.current_location.npcs_in_location.append(character)
         #         character_found = True
         #         print(f"You spawned '{character.full_name}' in the current location.")
         #         break
         # if not character_found:
         # Generate the character
         character = text_adventure.generate_character_from_prompt(character_to_spawn)
-        current_location.characters_in_location.append(character)
+        text_adventure.current_location.npcs_in_location.append(character)
         character_found = True
         print(f"You spawned '{character.full_name}' in the current location.")
     elif action_args[0].lower() == "say":
@@ -1660,8 +1759,8 @@ while True: # Main game loop
                     player.stats.hp += item.health_restored
                     player.equipment.inventory.remove(item)
                     for location in text_adventure.locations:
-                        if location.name == current_location.name:
-                            location.objects_in_location = current_location.objects_in_location
+                        if location.name == text_adventure.current_location.name:
+                            location.objects_in_location = text_adventure.current_location.objects_in_location
                             break
                     item_found = True
                     print(f"You ate the {item.name}.")
@@ -1678,7 +1777,7 @@ while True: # Main game loop
         if player.equipment.equiped_weapon == None:
             print("You need a weapon equipped to attack.")
             continue
-        for character in current_location.characters_in_location:
+        for character in text_adventure.current_location.npcs_in_location:
             if character_to_attack.lower() in character.full_name.lower():
                 character_found = True
                 character.stats.hp -= player.equipment.equiped_weapon.damage
