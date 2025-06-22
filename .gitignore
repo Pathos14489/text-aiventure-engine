@@ -1,2 +1,8 @@
 /__pycache__
 chromadb/chroma.sqlite3
+build/*
+build
+chromadb
+old
+saves/*.json
+config.json
