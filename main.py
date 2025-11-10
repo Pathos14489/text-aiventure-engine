@@ -279,6 +279,8 @@ class GameState:
         self.in_world: bool = False
         self.run_game: bool = True
         
+        self.verbose = verbose
+        
         self.text_adventure: TextAIventureEngine = TextAIventureEngine(api_key=api_key, api_url=api_url, game_state=self, model_name=model_name, openrouter_style_api=openrouter_style_api, verbose=verbose)
         self.text_adventure.temp = temp
         self.text_adventure.top_p = top_p
@@ -297,6 +299,7 @@ class GameState:
                 "rent_interval": self.rent_interval,
                 "current_story": self.current_story.id if self.current_story else None,
                 "first_turn": self.first_turn,
+                "in_world": self.in_world,
                 "inn_keeper_description_lines": self.inn_keeper_description_lines,
                 "inn_description_lines": self.inn_description_lines,
                 "innkeeper_lines": self.innkeeper_lines,
@@ -312,7 +315,9 @@ class GameState:
             f.write(json.dumps(self.player.to_json(), indent=4))
         stories_dir = f"{save_dir}stories/"
         os.makedirs(stories_dir, exist_ok=True)
-        for story in self.stories:
+        def save_story(story: Story):
+            if self.verbose:
+                print_colored(f"Saving story '{story.id}'...", "GREEN")
             story_json_filename = f"{stories_dir}{story.id}/story.json"
             story_player_json_filename = f"{stories_dir}{story.id}/player.json"
             locations_dir = f"{stories_dir}{story.id}/locations/"
@@ -321,7 +326,12 @@ class GameState:
                 f.write(json.dumps(story.to_json(), indent=4))
             with open(story_player_json_filename, "w", encoding="utf-8") as f:
                 f.write(json.dumps(self.player.to_json(), indent=4))
+            done_locations = set()
             for location in story.locations:
+                if location.id in done_locations:
+                    continue
+                if self.verbose:
+                    print_colored(f"Saving location '{location.id}'...", "GREEN")
                 location_dir = f"{locations_dir}{location.id}/"
                 os.makedirs(location_dir, exist_ok=True)
                 with open(f"{location_dir}location.json", "w", encoding="utf-8") as f:
@@ -330,14 +340,23 @@ class GameState:
                 location_characters_dir = f"{location_dir}characters/"
                 os.makedirs(location_characters_dir, exist_ok=True)
                 for character in location.npcs_in_location:
+                    if self.verbose:
+                        print_colored(f"Saving character '{character.id}'...", "GREEN")
                     with open(f"{location_characters_dir}{character.id}.json", "w", encoding="utf-8") as f:
                         f.write(json.dumps(character.to_json(), indent=4))
                         
                 location_objects_dir = f"{location_dir}objects/"
                 os.makedirs(location_objects_dir, exist_ok=True)
                 for obj in location.objects_in_location:
+                    if self.verbose:
+                        print_colored(f"Saving object '{obj.id}'...", "GREEN")
                     with open(f"{location_objects_dir}{obj.id}.json", "w", encoding="utf-8") as f:
                         f.write(json.dumps(obj.to_json(), indent=4))
+                done_locations.add(location.id)
+        save_story(self.current_story)
+        for story in self.stories:
+            if story.id != self.current_story.id:
+                save_story(story)
 
     def load(self, save_name: str):
         if not os.path.exists(f"./saves/{save_name}/game_state.json"):
@@ -350,6 +369,7 @@ class GameState:
             self.day = game_state_data["day"]
             self.rent_interval = game_state_data["rent_interval"]
             self.first_turn = game_state_data.get("first_turn", False)
+            self.in_world = game_state_data.get("in_world", False)
             self.inn_keeper_description_lines = game_state_data.get("inn_keeper_description_lines", self.inn_keeper_description_lines)
             self.inn_description_lines = game_state_data.get("inn_description_lines", self.inn_description_lines)
             self.innkeeper_lines = game_state_data.get("innkeeper_lines", self.innkeeper_lines)
@@ -425,7 +445,7 @@ class GameState:
             clear_console()
         print_in_box(self.progress_line, color="yellow")
         print(f"You're standing on the floating rock in the endless void. Around you is the Inn at the End of Time, the Junkyard, and the Hooded Figure who offers to take you to new places.")
-        print_in_box(f"Available Actions:\n- {format_colored_text('inn','red')} - Go to the Inn\n- {format_colored_text('junkyard','red')} - Go to the Junkyard\n- {format_colored_text('leap','red')} - Talk to the Hooded Figure to leap to a new location", color="cyan")
+        print_in_box(f"Available Actions:\n- {format_colored_text('inn','red')} - Go to the Inn\n- {format_colored_text('junkyard','red')} - Go to the Junkyard\n- {format_colored_text('leap','red')} - Talk to the Hooded Figure to leap to a new location\n- {format_colored_text('save','red')} - Save your progress\n- {format_colored_text('quit','red')} - Quit the game", color="cyan")
 
     def inn_keeper_say(self, line: str):
         print_chatbox("Innkeeper", line, speaker_color="yellow", message_color="white", box_color="grey")
@@ -775,6 +795,14 @@ class GameState:
         self.first_turn = True # Maybe not on load?
         self.run_game = True
 
+    def trigger_save(self, save_name: str = None):
+        if save_name is None:
+            save_name = self.save_name
+        print("Saving the game...")
+        # game_state.text_adventure.save_game(save_name)
+        game_state.save(save_name)
+        print("Game saved.")
+
     def hub_loop(self): 
         while self.run_game: # Hub World Loop - L2
             if self.first_turn:
@@ -782,19 +810,34 @@ class GameState:
             else: # Hub Screen
                 if should_clear_console:
                     clear_console()
+            if not self.in_world:
                 self.print_hub_screen()
             while not self.in_world: # Hub Screen Loop - L2.1
                 hub_action = input(f"{bcolors.GREY}>{bcolors.ENDC} ")
+                hub_action_args = hub_action.split(" ")
                 if hub_action.lower() == "inn":
                     self.open_inn_screen()
                 elif hub_action.lower() == "junkyard":
                     self.open_junkyard_screen()
                 elif hub_action.lower() == "leap":
                     self.open_edge_of_rock_screen()
+                elif hub_action.lower() == "quit" or hub_action.lower() == "exit":
+                    self.in_world = False
+                    self.run_game = False
+                    break
+                elif hub_action.lower() == "save":
+                    if len(hub_action_args) < 2:
+                        save_name = input("Enter a name for the save file: ")
+                        if save_name.strip() == "":
+                            save_name = None
+                    else:
+                        save_name = hub_action.split(" ", 1)[1].replace(" ", "_")
+                    self.trigger_save(save_name)
                 else:
                     print_colored("Invalid action. Please try again.", "red")
                 if should_clear_console:
                     clear_console()
+            if self.in_world:
                 self.print_current_screen()
             self.in_world_loop() # In-World Loop - L3
 
@@ -1501,7 +1544,7 @@ class GameState:
                     # print(f"You found {len(found['items'])} items, {len(found['characters'])} characters and {len(found['travelable_locations'])} travelable locations.")
                     print_colored(f"You found {len(found['items'])} items, {len(found['characters'])} characters and {len(found['travelable_locations'])} travelable locations.", "yellow")
                 if found_item:
-                    self.print_current_screen()
+                    should_refresh = True
                 else:
                     if to_find_prompt != None:
                         print_colored(f"You looked for '{to_find_prompt}' but couldn't find anything...", "red")
@@ -1613,16 +1656,17 @@ class GameState:
                 game_state.text_adventure.player.stats.action_points -= 1
             elif action.lower() == "quit" or action.lower() == "exit" or action.lower() == "q":
                 print("Quitting the game...")
+                self.in_world = False
+                self.in_game = False
                 break
             elif action_args[0].lower() == "save":
                 if len(action_args) < 2:
                     save_name = input("Enter a name for the save file: ")
+                    if save_name.strip() == "":
+                        save_name = None
                 else:
                     save_name = action.split(" ", 1)[1].replace(" ", "_")
-                print("Saving the game...")
-                # game_state.text_adventure.save_game(save_name)
-                game_state.save(save_name)
-                print("Game saved.")
+                self.trigger_save(save_name)
             elif action.lower() == "load":
                 save_name = input("Enter the name of the save file to load: ")
                 print("Loading the game...")

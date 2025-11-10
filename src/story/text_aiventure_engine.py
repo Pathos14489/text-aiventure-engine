@@ -139,6 +139,7 @@ class TextAIventureEngine():
                 story = Story.from_json(story_json)
                 story.locations.append(story.starting_location)
                 for character in story.starting_location.npcs_in_location:
+                    character.id = generate_id()
                     character = self.postprocess_character(character)
                     
                 # story_json = json.loads(story.model_dump_json())
@@ -225,6 +226,7 @@ class TextAIventureEngine():
                 story.starting_location.id = generate_id()
                 story.locations.append(story.starting_location)
                 for character in story.starting_location.npcs_in_location:
+                    character.id = generate_id()
                     character = self.postprocess_character(character)
             except Exception as e:
                 if self.verbose:
@@ -369,6 +371,7 @@ class TextAIventureEngine():
                 location_json = json.loads(location_json)
                 location = Location(**location_json)
                 for character in location.npcs_in_location:
+                    character.id = generate_id()
                     character = self.postprocess_character(character)
                 if self.verbose:
                     # print(json.dumps(location_json,indent=4))
@@ -547,6 +550,9 @@ class TextAIventureEngine():
             for character in location.npcs_in_location:
                 character = self.postprocess_character(character)
             self.locations.append(location)
+        if self.game_state != None:
+            if self.game_state.current_story != None:
+                self.game_state.current_story.locations.append(self.starting_location)
     
     def travel_to_location(self, travelable_location:TravelableLocation):
         print_colored("You are travelling to '"+travelable_location.location_name+"'...", color="green")
@@ -562,7 +568,8 @@ class TextAIventureEngine():
             next_location.name = travelable_location.location_name
             self.locations.append(next_location)
             if self.game_state != None:
-                self.game_state.current_story.locations.append(next_location)
+                if self.game_state.current_story != None:
+                    self.game_state.current_story.locations.append(next_location)
         can_travel = False
         for t_location in self.current_location.travel_destinations:
             if t_location.portal == travelable_location.portal:
@@ -758,6 +765,7 @@ class TextAIventureEngine():
                 if self.verbose:
                     print_colored(json.dumps(character_json,indent=4), color="green")
                 character = Character(**character_json)
+                character.id = generate_id()
                 character = self.postprocess_character(character)
                 # character_json = json.loads(character.model_dump_json())
                 # print(json.dumps(character_json,indent=4))
@@ -770,7 +778,6 @@ class TextAIventureEngine():
         return character
     
     def postprocess_character(self, character:Character):
-        character.id = generate_id()
         if character.worn_clothing.headwear != None:
             if character.worn_clothing.headwear.name.lower() == "none" or character.worn_clothing.headwear.name.lower() == "null" or character.worn_clothing.headwear.name.strip() == "" or character.worn_clothing.headwear.name.lower() == "nil":
                 character.worn_clothing.headwear = None
@@ -892,6 +899,7 @@ class TextAIventureEngine():
                     # print(json.dumps(character_json,indent=4))
                     print_colored(json.dumps(character_json,indent=4), color="green")
                 character = Character(**character_json)
+                character.id = generate_id()
                 character = self.postprocess_character(character)
             except Exception as e:
                 if self.verbose:
@@ -2081,7 +2089,8 @@ class TextAIventureEngine():
             next_location.name = travelable_location.location_name
             self.locations.append(next_location)
             if self.game_state != None:
-                self.game_state.current_story.locations.append(next_location)
+                if self.game_state.current_story != None:
+                    self.game_state.current_story.locations.append(next_location)
         can_travel = False
         for t_location in self.current_location.travel_destinations:
             if t_location.portal == travelable_location.portal:
