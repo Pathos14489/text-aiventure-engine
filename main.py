@@ -451,8 +451,8 @@ class GameState:
         if should_clear_console:
             clear_console()
         print_in_box(self.progress_line, color="yellow")
-        print(f"You're standing on the floating rock in the endless void. Around you is the Inn at the End of Time, the Junkyard, and the Hooded Figure who offers to take you to new places.")
-        print_in_box(f"Available Actions:\n- {format_colored_text('inn','red')} - Go to the Inn\n- {format_colored_text('junkyard','red')} - Go to the Junkyard\n- {format_colored_text('leap','red')} - Talk to the Hooded Figure to leap to a new location\n- {format_colored_text('save','red')} - Save your progress\n- {format_colored_text('load','red')} - Load a saved game\n- {format_colored_text('quit','red')} - Quit the game", color="cyan")
+        print(f"You're standing on the floating rock in the endless void. Around you is the Inn at the End of Time, the Junkyard, and the Magician who offers to take you to new places.")
+        print_in_box(f"Available Actions:\n- {format_colored_text('inn','red')} - Go to the Inn\n- {format_colored_text('junkyard','red')} - Go to the Junkyard\n- {format_colored_text('leap','red')} - Talk to the Magician to leap to a new location\n- {format_colored_text('save','red')} - Save your progress\n- {format_colored_text('load','red')} - Load a saved game\n- {format_colored_text('quit','red')} - Quit the game", color="cyan")
 
     def inn_keeper_say(self, line: str):
         print_chatbox("Innkeeper", line, speaker_color="yellow", message_color="white", box_color="grey")
@@ -464,7 +464,7 @@ class GameState:
         print_chatbox("Junkman", line, speaker_color="red", message_color="white", box_color="grey")
 
     def magician_say(self, line: str):
-        print_chatbox("Hooded Figure", line, speaker_color="magenta", message_color="white", box_color="grey")
+        print_chatbox("Magician", line, speaker_color="magenta", message_color="white", box_color="grey")
 
     def open_inn_screen(self):
         while True:
@@ -586,12 +586,12 @@ class GameState:
             if should_refresh:
                 time.sleep(2)
             if should_refresh:
-                print_in_box("Edge of Rock Screen - Available Actions:\n- talk - Talk to the Hooded Figure\n- leap - Leap into the void to a new location\n- leave - Step away from the edge", color="cyan")
+                print_in_box("Edge of Rock Screen - Available Actions:\n- talk - Talk to the Magician\n- leap - Leap into the void to a new location\n- leave - Step away from the edge", color="cyan")
                 should_refresh = False
             
             action = input("> ").lower()
             if action == "talk":
-                self.narrator_say("You approach the Hooded Figure.")
+                self.narrator_say("You approach the Magician.")
                 time.sleep(1)
             elif action == "leap":
                 self.magician_say( "Where would you like to leap to?")
@@ -617,7 +617,7 @@ class GameState:
                         self.narrator_say("You don't have enough money to pay the toll. You step back from the edge.")
                         continue
                     self.mod_money(-2000)
-                    self.narrator_say("You pay the toll of $2000 to the Hooded Figure.")
+                    self.narrator_say("You pay the toll of $2000 to the Magician.")
                     story = self.text_adventure.generate_story(leap_destination)
                     self.stories.append(story)
                     if self.verbose:
