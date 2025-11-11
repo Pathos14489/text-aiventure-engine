@@ -272,6 +272,10 @@ class GameState:
             "Take the leap of faith...",
         ]
 
+        self.new_leap_cost = 100 # TODO: Add a default leap cost property that this is set to and that the default load value uses, this currently lets you change the default cost until you restart the game
+        self.new_leap_interval = 100
+
+
         self.player: Character = None
 
         self.stories: list[Story] = []
@@ -297,6 +301,8 @@ class GameState:
                 "money": self.money,
                 "day": self.day,
                 "rent_interval": self.rent_interval,
+                "new_leap_cost": self.new_leap_cost,
+                "new_leap_interval": self.new_leap_interval,
                 "current_story": self.current_story.id if self.current_story else None,
                 "first_turn": self.first_turn,
                 "in_world": self.in_world,
@@ -368,6 +374,8 @@ class GameState:
             self.money = game_state_data["money"]
             self.day = game_state_data["day"]
             self.rent_interval = game_state_data["rent_interval"]
+            self.new_leap_cost = game_state_data.get("new_leap_cost", self.new_leap_cost)
+            self.new_leap_interval = game_state_data.get("new_leap_interval", self.new_leap_interval)
             self.first_turn = game_state_data.get("first_turn", False)
             self.in_world = game_state_data.get("in_world", False)
             self.inn_keeper_description_lines = game_state_data.get("inn_keeper_description_lines", self.inn_keeper_description_lines)
@@ -385,6 +393,7 @@ class GameState:
             self.set_player(Character.from_json(player_data))
         stories_dir = f"{save_dir}stories/"
         self.stories = []
+        self.current_story = None
         for story_filename in os.listdir(stories_dir):
             if story_filename.endswith("_player.json"):
                 continue
@@ -419,9 +428,7 @@ class GameState:
             story = Story.from_json(story_data)
             self.stories.append(story)
             if story.id == game_state_data["current_story"]:
-                self.current_story = story
-                self.text_adventure.set_story(story)
-                self.text_adventure.current_location = story.starting_location # TODO: Remember last location in save
+                self.set_story(story)
 
 
     @property
@@ -445,7 +452,7 @@ class GameState:
             clear_console()
         print_in_box(self.progress_line, color="yellow")
         print(f"You're standing on the floating rock in the endless void. Around you is the Inn at the End of Time, the Junkyard, and the Hooded Figure who offers to take you to new places.")
-        print_in_box(f"Available Actions:\n- {format_colored_text('inn','red')} - Go to the Inn\n- {format_colored_text('junkyard','red')} - Go to the Junkyard\n- {format_colored_text('leap','red')} - Talk to the Hooded Figure to leap to a new location\n- {format_colored_text('save','red')} - Save your progress\n- {format_colored_text('quit','red')} - Quit the game", color="cyan")
+        print_in_box(f"Available Actions:\n- {format_colored_text('inn','red')} - Go to the Inn\n- {format_colored_text('junkyard','red')} - Go to the Junkyard\n- {format_colored_text('leap','red')} - Talk to the Hooded Figure to leap to a new location\n- {format_colored_text('save','red')} - Save your progress\n- {format_colored_text('load','red')} - Load a saved game\n- {format_colored_text('quit','red')} - Quit the game", color="cyan")
 
     def inn_keeper_say(self, line: str):
         print_chatbox("Innkeeper", line, speaker_color="yellow", message_color="white", box_color="grey")
@@ -562,37 +569,65 @@ class GameState:
                 continue
 
     def open_edge_of_rock_screen(self):
+        should_refresh = True
         while True:
-            if should_clear_console:
-                clear_console()
-            print_in_box(self.progress_line, color="yellow")
-            random_edge_description = random.choice(self.edge_of_rock_description_lines)
-            random_magician_description = random.choice(self.magician_description_lines)
+            if should_refresh:
+                if should_clear_console:
+                    clear_console()
+                print_in_box(self.progress_line, color="yellow")
+                random_edge_description = random.choice(self.edge_of_rock_description_lines)
+                random_magician_description = random.choice(self.magician_description_lines)
+                self.narrator_say(f"You stand at the edge of the floating rock. {random_edge_description} The hooded figure stands nearby. {random_magician_description}")
             random_magician_line = random.choice(self.magician_lines)
-            self.narrator_say(f"You stand at the edge of the floating rock. {random_edge_description} The hooded figure stands nearby. {random_magician_description}")
-            time.sleep(2)
-            magician.to_terminal(columns=90)
+            if should_refresh:
+                time.sleep(2)
+                magician.to_terminal(columns=90)
             self.magician_say( random_magician_line)
-            time.sleep(2)
-            print_in_box("Edge of Rock Screen - Available Actions:\n- talk - Talk to the Hooded Figure\n- leap - Leap into the void to a new location\n- leave - Step away from the edge", color="cyan")
-
+            if should_refresh:
+                time.sleep(2)
+            if should_refresh:
+                print_in_box("Edge of Rock Screen - Available Actions:\n- talk - Talk to the Hooded Figure\n- leap - Leap into the void to a new location\n- leave - Step away from the edge", color="cyan")
+                should_refresh = False
+            
             action = input("> ").lower()
             if action == "talk":
                 self.narrator_say("You approach the Hooded Figure.")
                 time.sleep(1)
-                self.magician_say( random_magician_line)
             elif action == "leap":
                 self.magician_say( "Where would you like to leap to?")
                 leap_destination = input(">")
-                story = self.text_adventure.generate_story(leap_destination)
-                if verbose:
-                    print("Generated Story:",story)
+
+                found_story = None
+                for story in self.stories:
+                    if leap_destination.lower() in story.starting_location.name.lower():
+                        if self.verbose:
+                            print("Found existing leap spot:",story.starting_location.name)
+                        found_story = story
+                        break
+                if found_story is None:
+                    if self.verbose:
+                        print("Generating new leap spot for destination:",leap_destination)
+                    self.magician_say(f"Ah.. A new place. You'll have to pay the toll before you can safely leap there.")
+                    time.sleep(2)
+                    pay_toll = input("Pay the toll of $2000 to leap to this new location? (y/n): ") == "y"
+                    if not pay_toll:
+                        self.narrator_say("You decide not to pay the toll and step back from the edge.")
+                        continue
+                    if self.money < 2000:
+                        self.narrator_say("You don't have enough money to pay the toll. You step back from the edge.")
+                        continue
+                    self.mod_money(-2000)
+                    self.narrator_say("You pay the toll of $2000 to the Hooded Figure.")
+                    story = self.text_adventure.generate_story(leap_destination)
+                    self.stories.append(story)
+                    if self.verbose:
+                        print("Generated Story:",story)
                 print_story(story)
-                confirmation = input("Would you like to use this story? (y to confirm): ")
+                confirmation = input("Would you leap to this world? (y/n): ")
                 if confirmation.lower() == "y":
-                    self.text_adventure.set_story(story)
-                    self.print_current_screen()
-                    in_world = True
+                    self.set_story(story)
+                    # self.print_current_screen()
+                    self.in_world = True
                     break
                 self.narrator_say("You decide to leap into the void...")
                 time.sleep(2)
@@ -605,9 +640,16 @@ class GameState:
             else:
                 self.narrator_say("Invalid action. Please choose again.")
 
+    def mod_money(self, amount: int):
+        self.money += amount
+
     def set_player(self, player: Character):
         self.player = player
         self.text_adventure.player = player
+
+    def set_story(self, story: Story):
+        self.current_story = story
+        self.text_adventure.set_story(story)
 
     def opening_cutscene(self, skip_cutscene: bool = False, player_prompt: str = None, room_prompt: str = None, first_story_prompt: str = None):
         if should_clear_console:
@@ -777,8 +819,7 @@ class GameState:
             confirmation = input("Would you like to use this story? (y to confirm): ")
             if confirmation.lower() == "y":
                 self.stories.append(story)
-                self.current_story = story
-                self.text_adventure.set_story(story)
+                self.set_story(story)
                 ready = True
                 
         if not skip_cutscene:
@@ -812,7 +853,13 @@ class GameState:
                     clear_console()
             if not self.in_world:
                 self.print_hub_screen()
+            should_refresh = True
             while not self.in_world: # Hub Screen Loop - L2.1
+                if should_refresh:
+                    if should_clear_console:
+                        clear_console()
+                    self.print_hub_screen()
+                    should_refresh = False
                 hub_action = input(f"{bcolors.GREY}>{bcolors.ENDC} ")
                 hub_action_args = hub_action.split(" ")
                 if hub_action.lower() == "inn":
@@ -821,7 +868,7 @@ class GameState:
                     self.open_junkyard_screen()
                 elif hub_action.lower() == "leap":
                     self.open_edge_of_rock_screen()
-                elif hub_action.lower() == "quit" or hub_action.lower() == "exit":
+                elif hub_action.lower() == "quit" or hub_action.lower() == "exit" or hub_action.lower() == "q":
                     self.in_world = False
                     self.run_game = False
                     break
@@ -833,6 +880,15 @@ class GameState:
                     else:
                         save_name = hub_action.split(" ", 1)[1].replace(" ", "_")
                     self.trigger_save(save_name)
+                elif hub_action.lower() == "load":
+                    if len(hub_action_args) < 2:
+                        load_name = input("Enter the name of the save file to load: ")
+                        if load_name.strip() == "":
+                            load_name = None
+                    else:
+                        load_name = hub_action.split(" ", 1)[1].replace(" ", "_")
+                    self.load(load_name)
+                    should_refresh = True
                 else:
                     print_colored("Invalid action. Please try again.", "red")
                 if should_clear_console:
@@ -1740,10 +1796,6 @@ if __name__ == "__main__":
         print_colored("Verbose output enabled.", "yellow")
         print_colored("Prototype AI turns: " + str(prototype_ai_turns), "yellow")
         print_colored("Prototype AI game master: " + str(prototype_ai_game_master), "yellow")
-
-    
-
-
 
     tprint("Welcome to...")
     while True: # Main Menu Loop - L1
