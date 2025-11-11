@@ -3,6 +3,8 @@ from typing import Union
 
 from src.utils import preprocess, generate_id
 
+from src.regex_patterns import lower_single_sentence
+
 class TravelableLocation(BaseModel):
     """Travelable Location Schema - A location in a text adventure game that can be traveled to. The descriptions are intended to be combined into a single description with linebreaks between each part in the final output, so write them such that Setting, Atmosphere, and Scenario are all separate sections. that should cohesively flow together, seperated by new lines, and not repeat themselves. Tags are used to help search for locations, and can be things like "Forest", "Castle", "Desert", etc. All fields are required to have a value. These should be physically connected locations to the Location parent that they are a part of. Examples of travelable locations include doors, gates, paths, etc. that lead to other nearby locations. The manner in which the characters travel to a new location. Travelable locations can only be large spaces, and CANNOT be objects within the current location."""
     id: str = Field(default_factory=generate_id)
@@ -24,21 +26,21 @@ class TravelableLocation(BaseModel):
         "City Square - Whiterun"
     ])
     location_physical_description: str = Field(description="A brief description of the location. Can be a city, a forest, a mountain, a cave, etc. The description of the location.", examples=[
-        "A small kitchen in your house",
-        "A dark and foreboding forest",
-        "A grand throne room in a castle",
-        "A bustling city square",
-        "A cozy inn",
-        "A large bustling city square in the middle of the day"
-    ])
+        "a small kitchen in your house",
+        "a dark and foreboding forest",
+        "a grand throne room in a castle",
+        "a bustling city square",
+        "a cozy inn",
+        "a large bustling city square in the middle of the day"
+    ], pattern=lower_single_sentence)
     movement_description: str = Field(description="A description of how the characters move to the new location. Can be via a door, a gate, a path, etc. The manner in which the characters travel to the new location.", examples=[
-        "You walk through the door",
-        "You step through the portal",
-        "You walk down the path",
-        "You walk through the gate",
-        "You step through the archway",
-        "You walk through the tunnel"
-    ])
+        "you walk through the door",
+        "you step through the portal",
+        "you walk down the path",
+        "you walk through the gate",
+        "you step through the archway",
+        "you walk through the tunnel"
+    ], pattern=lower_single_sentence)
 
     def __init__(self, **data):
         data = preprocess(data)

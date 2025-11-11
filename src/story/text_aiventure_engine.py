@@ -595,7 +595,8 @@ class TextAIventureEngine():
                         next_location.travel_destinations.append(between_location)
                         portal_already_exists = True
             # print(f"Travelling to {next_location.name}...")
-            print(travelable_location.movement_description)
+            movement_description = travelable_location.movement_description[0].upper() + travelable_location.movement_description[1:]+"."
+            print(movement_description)
             # When travelling to a location, make sure you can't travel to the same location from that location
             for t_location in next_location.travel_destinations:
                 if t_location.location_name == next_location.name:
