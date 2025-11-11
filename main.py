@@ -851,8 +851,8 @@ class GameState:
             else: # Hub Screen
                 if should_clear_console:
                     clear_console()
-            if not self.in_world:
-                self.print_hub_screen()
+            # if not self.in_world:
+            #     self.print_hub_screen()
             should_refresh = True
             while not self.in_world: # Hub Screen Loop - L2.1
                 if should_refresh:
@@ -895,9 +895,10 @@ class GameState:
                     clear_console()
             if self.in_world:
                 self.print_current_screen()
-            self.in_world_loop() # In-World Loop - L3
+                self.in_world_loop() # In-World Loop - L3
 
     def in_world_loop(self):
+        self.print_current_screen()
         while self.in_world:  # In-World Loop - L3
             should_refresh = False
             # Player Turn
