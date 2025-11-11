@@ -5,6 +5,7 @@ from src.regex_patterns import lower_single_sentence
 from .base_item import BaseItem
 from .medical_item import MedicalItem
 from .readable.book import Book
+from .readable.note import Note
 from .weapon import Weapon
 from .food import Food
 from .clothing import Headwear, Footwear, Gloves, LowerBodywear, UpperBodywear, FullBodywear, Accessory, UpperBodyUnderwear, LowerUnderwear
@@ -94,7 +95,7 @@ class Container(BaseItem):
         "Beside the sandbags",
         "On the ground"
     ], pattern=lower_single_sentence)
-    items: list[Union[Item,Food,Weapon,Headwear,Footwear,Gloves,LowerBodywear,UpperBodywear,FullBodywear,Accessory,MedicalItem,Book,UpperBodyUnderwear,LowerUnderwear]] = Field(description="A list of items contained within the container.")
+    items: list[Union[Item,Food,Weapon,Headwear,Footwear,Gloves,LowerBodywear,UpperBodywear,FullBodywear,Accessory,MedicalItem,Book,Note,UpperBodyUnderwear,LowerUnderwear]] = Field(description="A list of items contained within the container.")
     # value: int = Field(...,ge=0)
     # weight: int = Field(...,ge=0)
     container_value: int = Field(...,ge=0, description="The value of the container itself, not including the items inside it.")
@@ -132,7 +133,7 @@ class Container(BaseItem):
         container.items = [from_json(item_data) for item_data in items]
         return container
 
-SomeItem = Union[Item,Food,Weapon,Headwear,Footwear,Gloves,LowerBodywear,UpperBodywear,FullBodywear,Accessory,Container,MedicalItem,Book,UpperBodyUnderwear,LowerUnderwear]
+SomeItem = Union[Item,Food,Weapon,Headwear,Footwear,Gloves,LowerBodywear,UpperBodywear,FullBodywear,Accessory,Container,MedicalItem,Book,Note,UpperBodyUnderwear,LowerUnderwear]
 
 def from_json(data: dict) -> SomeItem:
     """Deserialize a JSON object into the appropriate Item subclass based on the type_string field."""
@@ -163,6 +164,8 @@ def from_json(data: dict) -> SomeItem:
         return MedicalItem.from_json(data)
     elif type_string == "Book":
         return Book.from_json(data)
+    elif type_string == "Note":
+        return Note.from_json(data)
     elif type_string == "UpperBodyUnderwear":
         return UpperBodyUnderwear.from_json(data)
     elif type_string == "LowerUnderwear":
